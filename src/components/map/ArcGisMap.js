@@ -29,7 +29,7 @@ const ArcGisMap = () => {
       const zipCodeSet = new Set();
 
       layerViewRef.current.queryFeatures(query).then(({ features }) => {
-        console.log("***features + result***", features);
+        // console.log("***features + result***", features);
 
         // create list of zip code
         const list = features.reduce((currentList, feature) => {
@@ -40,7 +40,6 @@ const ArcGisMap = () => {
             currentList.push({ zipCode, latitude, longitude });
 
             zipCodeSet.add(zipCode);
-            console.log(zipCode);
           }
           return currentList;
         }, []);
@@ -114,27 +113,16 @@ const ArcGisMap = () => {
   }, []);
 
   const handleFilter = (filter) => {
-    if (filter) {
-      const { zipCode, latitude, longitude } = filter;
-      layerViewRef.current.filter = {
-        where: `ZIP = '${zipCode}'`,
-      };
+    layerViewRef.current.filter = {
+      where: filter ? `ZIP = '${filter.zipCode}'` : "1=1",
+    };
 
-      view.goTo({
-        center:
-          latitude && longitude ? [longitude, latitude] : [-115.1398, 36.1699],
-        zoom: latitude && longitude ? 14 : 12,
-      });
-    } else {
-      layerViewRef.current.filter = {
-        where: `1=1`,
-      };
-
-      view.goTo({
-        center: [-115.1398, 36.1699],
-        zoom: 12,
-      });
-    }
+    view.goTo({
+      center: filter
+        ? [filter.longitude, filter.latitude]
+        : [-115.1398, 36.1699],
+      zoom: filter ? 14 : 12,
+    });
   };
 
   return (
@@ -157,7 +145,7 @@ const ArcGisMap = () => {
       </div>
 
       {/* Title */}
-      <div ref={titleDiv} className="esri-widget title-container ">
+      <div ref={titleDiv} className="esri-widget title-container">
         <h1 id="title-text">Las Vegas Fire Incidents</h1>
       </div>
 
