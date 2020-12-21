@@ -19,9 +19,7 @@ const ArcGisMap = () => {
   useEffect(() => {
     console.log("useEffect 2");
     if (!loading) {
-      // layerViewRef.whenLayerView(testLayer).then((layerView) => {
       const query = layerViewRef.current.createQuery();
-      // const query = layerViewRef.current.createQuery();
       query.where = `1=1`;
       query.outFields = ["zip", "latitude", "longitude"];
       // query.returnDistinctValues = true; // return only unique values
@@ -31,7 +29,7 @@ const ArcGisMap = () => {
       layerViewRef.current.queryFeatures(query).then(({ features }) => {
         // console.log("***features + result***", features);
 
-        // create list of zip code
+        // create list of filter objects with zip code, longitude and latitude
         const list = features.reduce((currentList, feature) => {
           const zipCode = feature?.attributes?.ZIP;
           if (zipCode && !zipCodeSet.has(zipCode)) {
