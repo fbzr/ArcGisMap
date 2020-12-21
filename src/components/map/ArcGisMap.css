@@ -5,7 +5,7 @@
   width: 100%;
 }
 
-.esri-widget{
+.filter-container{
   max-height: 500px;
   overflow-y: auto;
 }
@@ -27,6 +27,7 @@
   vertical-align: baseline;
   cursor: pointer;
   height: 40px;
+  background-color: rgb(36, 36, 36);
 }
 
 .filter-title {
@@ -37,6 +38,7 @@
   vertical-align: baseline;
   cursor: pointer;
   cursor: default;
+  background-color: rgb(36,36,36);
 }
 
 .filter-item:focus {

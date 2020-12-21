@@ -13,7 +13,7 @@ const ArcGisMap = () => {
   const layerViewRef = useRef(null);
 
   const [view, setView] = useState(null);
-  const [zipCodeList, setZipCodeList] = useState(null);
+  const [filterList, setFilterList] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -23,22 +23,29 @@ const ArcGisMap = () => {
       const query = layerViewRef.current.createQuery();
       // const query = layerViewRef.current.createQuery();
       query.where = `1=1`;
-      query.outFields = ["zip"];
-      query.returnDistinctValues = true; // return only unique values
+      query.outFields = ["zip", "latitude", "longitude"];
+      // query.returnDistinctValues = true; // return only unique values
+
+      const zipCodeSet = new Set();
 
       layerViewRef.current.queryFeatures(query).then(({ features }) => {
         console.log("***features + result***", features);
 
         // create list of zip code
-        const list = features.reduce((zipList, feature) => {
+        const list = features.reduce((currentList, feature) => {
           const zipCode = feature?.attributes?.ZIP;
-          if (zipCode) {
-            zipList.push(zipCode);
+          if (zipCode && !zipCodeSet.has(zipCode)) {
+            const latitude = feature?.attributes?.latitude;
+            const longitude = feature?.attributes?.longitude;
+            currentList.push({ zipCode, latitude, longitude });
+
+            zipCodeSet.add(zipCode);
+            console.log(zipCode);
           }
-          return zipList;
+          return currentList;
         }, []);
 
-        setZipCodeList(list);
+        setFilterList(list);
       });
     }
   }, [loading]);
@@ -86,6 +93,8 @@ const ArcGisMap = () => {
             "zip",
             "alarmdate",
             "incidentnumber",
+            "latitude",
+            "longitude",
           ],
         });
 
@@ -97,35 +106,58 @@ const ArcGisMap = () => {
         layerViewRef.current = layerView;
 
         setLoading(false);
+        setView(mapView);
       }
     };
 
     init();
   }, []);
 
-  const handleZipCode = (zipCode) => {
-    layerViewRef.current.filter = {
-      where: zipCode ? `ZIP = '${zipCode}'` : "1=1",
-    };
+  const handleFilter = (filter) => {
+    if (filter) {
+      const { zipCode, latitude, longitude } = filter;
+      layerViewRef.current.filter = {
+        where: `ZIP = '${zipCode}'`,
+      };
+
+      view.goTo({
+        center:
+          latitude && longitude ? [longitude, latitude] : [-115.1398, 36.1699],
+        zoom: latitude && longitude ? 14 : 12,
+      });
+    } else {
+      layerViewRef.current.filter = {
+        where: `1=1`,
+      };
+
+      view.goTo({
+        center: [-115.1398, 36.1699],
+        zoom: 12,
+      });
+    }
   };
 
   return (
     <>
       {/* Filter */}
-      <div className="esri-widget " ref={filterDiv}>
+      <div className="esri-widgets filter-container" ref={filterDiv}>
         <h4 className="filter-title">Zip Code</h4>
-        <div onClick={() => handleZipCode(null)} className="filter-item">
+        <div onClick={() => handleFilter(null)} className="filter-item">
           All
         </div>
-        {zipCodeList?.map((zipCode) => (
-          <div onClick={() => handleZipCode(zipCode)} className="filter-item">
-            {zipCode}
+        {filterList?.map((filter) => (
+          <div
+            key={`${filter.zipCode}${filter.latitude}${filter.longitude}`}
+            onClick={() => handleFilter(filter)}
+            className="filter-item"
+          >
+            {filter.zipCode}
           </div>
         ))}
       </div>
 
       {/* Title */}
-      <div ref={titleDiv} className="esri-widget title-container">
+      <div ref={titleDiv} className="esri-widget title-container ">
         <h1 id="title-text">Las Vegas Fire Incidents</h1>
       </div>
 
