@@ -1,5 +1,7 @@
+import ArcGisMap from "./components/ArcGisMap";
+
 function App() {
-  return <div>App</div>;
+  return <ArcGisMap />;
 }
 
 export default App;
