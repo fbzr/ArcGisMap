@@ -11,41 +11,12 @@ const ArcGisMap = () => {
   const filterDiv = useRef(null);
   const titleDiv = useRef(null);
   const layerViewRef = useRef(null);
+  const layerRef = useRef(null);
+  const viewRef = useRef(null);
 
-  const [view, setView] = useState(null);
+  // const [view, setView] = useState(null);
   const [filterList, setFilterList] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    console.log("useEffect 2");
-    if (!loading) {
-      const query = layerViewRef.current.createQuery();
-      query.where = `1=1`;
-      query.outFields = ["zip", "latitude", "longitude"];
-      // query.returnDistinctValues = true; // return only unique values
-
-      const zipCodeSet = new Set();
-
-      layerViewRef.current.queryFeatures(query).then(({ features }) => {
-        // console.log("***features + result***", features);
-
-        // create list of filter objects with zip code, longitude and latitude
-        const list = features.reduce((currentList, feature) => {
-          const zipCode = feature?.attributes?.ZIP;
-          if (zipCode && !zipCodeSet.has(zipCode)) {
-            const latitude = feature?.attributes?.latitude;
-            const longitude = feature?.attributes?.longitude;
-            currentList.push({ zipCode, latitude, longitude });
-
-            zipCodeSet.add(zipCode);
-          }
-          return currentList;
-        }, []);
-
-        setFilterList(list);
-      });
-    }
-  }, [loading]);
 
   useEffect(() => {
     const init = async () => {
@@ -95,6 +66,26 @@ const ArcGisMap = () => {
           ],
         });
 
+        layerRef.current = layer;
+
+        const { features } = await layer.queryFeatures();
+        const zipCodeSet = new Set();
+
+        // create list of filter objects with zip code, longitude and latitude
+        const list = features.reduce((currentList, feature) => {
+          const zipCode = feature?.attributes?.ZIP;
+          if (zipCode && !zipCodeSet.has(zipCode)) {
+            const latitude = feature?.attributes?.latitude;
+            const longitude = feature?.attributes?.longitude;
+            currentList.push({ zipCode, latitude, longitude });
+
+            zipCodeSet.add(zipCode);
+          }
+          return currentList;
+        }, []);
+
+        setFilterList(list);
+
         map.layers.add(layer);
 
         const layerView = await mapView.whenLayerView(layer);
@@ -103,24 +94,32 @@ const ArcGisMap = () => {
         layerViewRef.current = layerView;
 
         setLoading(false);
-        setView(mapView);
+        viewRef.current = mapView;
       }
     };
 
     init();
   }, []);
 
-  const handleFilter = (filter) => {
+  const handleFilter = async (filter) => {
+    const where = filter ? `ZIP = '${filter.zipCode}'` : "1=1";
+
+    const { features } = await layerRef.current.queryFeatures({
+      where,
+      f: "json",
+      returnGeometry: true,
+      outSpatialReference: viewRef.current.spatialReference,
+    });
+
+    debugger;
+
     layerViewRef.current.filter = {
-      where: filter ? `ZIP = '${filter.zipCode}'` : "1=1",
+      where,
     };
 
-    view.goTo({
-      center: filter
-        ? [filter.longitude, filter.latitude]
-        : [-115.1398, 36.1699],
-      zoom: filter ? 14 : 12,
-    });
+    const geometries = features.map((feature) => feature.geometry);
+
+    viewRef.current.goTo(geometries);
   };
 
   return (
@@ -143,7 +142,7 @@ const ArcGisMap = () => {
       </div>
 
       {/* Title */}
-      <div ref={titleDiv} className="esri-widget title-container">
+      <div ref={titleDiv} className="esri-widget title-container ">
         <h1 id="title-text">Las Vegas Fire Incidents</h1>
       </div>
 
