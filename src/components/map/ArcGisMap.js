@@ -112,7 +112,7 @@ const ArcGisMap = () => {
   return (
     <>
       {/* Filter */}
-      <div className="esri-widget" ref={filterDiv}>
+      <div className="esri-widget " ref={filterDiv}>
         <h4 className="filter-title">Zip Code</h4>
         <div onClick={() => handleZipCode(null)} className="filter-item">
           All
@@ -125,7 +125,7 @@ const ArcGisMap = () => {
       </div>
 
       {/* Title */}
-      <div ref={titleDiv} class="esri-widget title-container">
+      <div ref={titleDiv} className="esri-widget title-container">
         <h1 id="title-text">Las Vegas Fire Incidents</h1>
       </div>
 
