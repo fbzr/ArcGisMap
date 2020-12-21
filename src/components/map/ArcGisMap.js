@@ -14,22 +14,21 @@ const ArcGisMap = () => {
 
   const [view, setView] = useState(null);
   const [filterList, setFilterList] = useState(null);
+  const [layerView, setLayerView] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log("useEffect 2");
     if (!loading) {
-      // layerViewRef.whenLayerView(testLayer).then((layerView) => {
-      const query = layerViewRef.current.createQuery();
-      // const query = layerViewRef.current.createQuery();
+      console.log("useEffect 2");
+      console.log("layerView", layerView);
+      const query = layerView.createQuery();
       query.where = `1=1`;
       query.outFields = ["zip", "latitude", "longitude"];
-      // query.returnDistinctValues = true; // return only unique values
 
       const zipCodeSet = new Set();
 
-      layerViewRef.current.queryFeatures(query).then(({ features }) => {
-        // console.log("***features + result***", features);
+      layerView.queryFeatures(query).then(({ features }) => {
+        console.log("***features + result***", features);
 
         // create list of zip code
         const list = features.reduce((currentList, feature) => {
@@ -48,6 +47,12 @@ const ArcGisMap = () => {
       });
     }
   }, [loading]);
+
+  useEffect(() => {
+    if (layerView) {
+      setLoading(false);
+    }
+  }, [layerView]);
 
   useEffect(() => {
     const init = async () => {
@@ -99,13 +104,13 @@ const ArcGisMap = () => {
 
         map.layers.add(layer);
 
-        const layerView = await mapView.whenLayerView(layer);
+        const lv = await mapView.whenLayerView(layer);
 
         // set layerViewRef  = layerView to be able to filter layerView later
-        layerViewRef.current = layerView;
+        // layerViewRef.current = layerView;
 
-        setLoading(false);
         setView(mapView);
+        setLayerView(lv);
       }
     };
 
@@ -113,7 +118,7 @@ const ArcGisMap = () => {
   }, []);
 
   const handleFilter = (filter) => {
-    layerViewRef.current.filter = {
+    layerView.filter = {
       where: filter ? `ZIP = '${filter.zipCode}'` : "1=1",
     };
 
