@@ -17,10 +17,6 @@ const popupTemplate = {
           label: "Zip Code",
         },
         {
-          fieldName: "YEAR_",
-          label: "Year",
-        },
-        {
           fieldName: "Alarmdate",
           label: "Alarm Date",
         },

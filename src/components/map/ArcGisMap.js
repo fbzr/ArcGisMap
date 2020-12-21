@@ -24,7 +24,7 @@ const ArcGisMap = () => {
       // const query = layerViewRef.current.createQuery();
       query.where = `1=1`;
       query.outFields = ["zip"];
-      query.returnDistinctValues = true;
+      query.returnDistinctValues = true; // return only unique values
 
       layerViewRef.current.queryFeatures(query).then(({ features }) => {
         console.log("***features + result***", features);
@@ -80,7 +80,13 @@ const ArcGisMap = () => {
             "https://services1.arcgis.com/F1v0ufATbBQScMtY/ArcGIS/rest/services/FireIncidents/FeatureServer/2",
           popupTemplate,
           // outFields: ["*"],
-          outFields: ["LOCADDRESS", "YEAR_", "ZIP", "zip", "alarmdate"],
+          outFields: [
+            "LOCADDRESS",
+            "ZIP",
+            "zip",
+            "alarmdate",
+            "incidentnumber",
+          ],
         });
 
         map.layers.add(layer);
