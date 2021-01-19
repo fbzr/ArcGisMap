@@ -1,9 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
-import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
-import ArcGISMap from "@arcgis/core/Map";
-import MapView from "@arcgis/core/views/MapView";
-import Expand from "@arcgis/core/widgets/Expand";
 import popupTemplate from "./utils/popupTemplate";
+import { setDefaultOptions, loadModules } from "esri-loader";
 import "./ArcGisMap.css";
 
 const ArcGisMap = () => {
@@ -16,86 +13,87 @@ const ArcGisMap = () => {
 
   // const [view, setView] = useState(null);
   const [filterList, setFilterList] = useState(null);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const init = async () => {
-      console.log("useEffect 1");
-      if (mapDiv.current) {
-        /**
-         * Initialize application
-         */
+      // before loading the modules for the first time,
+      // also lazy load the CSS for the version of
+      // the script that you're loading from the CDN
+      setDefaultOptions({ css: true });
 
-        const map = new ArcGISMap({
-          basemap: "topo-vector",
-        });
+      const [ArcGISMap, MapView, Expand, FeatureLayer] = await loadModules([
+        "esri/Map",
+        "esri/views/MapView",
+        "esri/widgets/Expand",
+        "esri/layers/FeatureLayer",
+      ]);
 
-        const mapView = new MapView({
-          map,
-          container: mapDiv.current,
-          center: [-115.1398, 36.1699], // Sets the center point of the view at a specified lon/lat - Las Vegas: 36.1699° N, 115.1398° W
-          zoom: 12,
-        });
+      const map = new ArcGISMap({ basemap: "topo-vector" });
 
-        // create filter button
-        const filterExpand = new Expand({
-          view: mapView,
-          content: filterDiv.current,
-          expandIconClass: "esri-icon-filter",
-          group: "top-left",
-        });
+      const view = new MapView({
+        map,
+        container: mapDiv.current,
+        center: [-115.1398, 36.1699], // Sets the center point of the view at a specified lon/lat - Las Vegas: 36.1699° N, 115.1398° W
+        zoom: 12,
+      });
 
-        // Add filter button to map
-        mapView.ui.add(filterExpand, "top-left");
-        // Add title to map
-        mapView.ui.add(titleDiv.current, "top-right");
+      // create filter button
+      const filterExpand = new Expand({
+        view,
+        content: filterDiv.current,
+        expandIconClass: "esri-icon-filter",
+        group: "top-left",
+      });
 
-        const layer = new FeatureLayer({
-          url:
-            "https://services1.arcgis.com/F1v0ufATbBQScMtY/ArcGIS/rest/services/FireIncidents/FeatureServer/2",
-          popupTemplate,
-          // outFields: ["*"],
-          outFields: [
-            "LOCADDRESS",
-            "ZIP",
-            "zip",
-            "alarmdate",
-            "incidentnumber",
-            "latitude",
-            "longitude",
-          ],
-        });
+      // Add filter button to map
+      view.ui.add(filterExpand, "top-left");
+      // Add title to map
+      view.ui.add(titleDiv.current, "top-right");
 
-        layerRef.current = layer;
+      const layer = new FeatureLayer({
+        url:
+          "https://services1.arcgis.com/F1v0ufATbBQScMtY/ArcGIS/rest/services/FireIncidents/FeatureServer/2",
+        popupTemplate,
+        // outFields: ["*"],
+        outFields: [
+          "LOCADDRESS",
+          "ZIP",
+          "zip",
+          "alarmdate",
+          "incidentnumber",
+          "latitude",
+          "longitude",
+        ],
+      });
 
-        const { features } = await layer.queryFeatures();
-        const zipCodeSet = new Set();
+      layerRef.current = layer;
 
-        // create list of filter objects with zip code, longitude and latitude
-        const list = features.reduce((currentList, feature) => {
-          const zipCode = feature?.attributes?.ZIP;
-          if (zipCode && !zipCodeSet.has(zipCode)) {
-            const latitude = feature?.attributes?.latitude;
-            const longitude = feature?.attributes?.longitude;
-            currentList.push({ zipCode, latitude, longitude });
+      const { features } = await layer.queryFeatures();
+      const zipCodeSet = new Set();
 
-            zipCodeSet.add(zipCode);
-          }
-          return currentList;
-        }, []);
+      // create list of filter objects with zip code, longitude and latitude
+      const list = features.reduce((currentList, feature) => {
+        const zipCode = feature?.attributes?.ZIP;
+        if (zipCode && !zipCodeSet.has(zipCode)) {
+          const latitude = feature?.attributes?.latitude;
+          const longitude = feature?.attributes?.longitude;
+          currentList.push({ zipCode, latitude, longitude });
 
-        setFilterList(list);
+          zipCodeSet.add(zipCode);
+        }
+        return currentList;
+      }, []);
 
-        map.layers.add(layer);
+      setFilterList(list);
 
-        const layerView = await mapView.whenLayerView(layer);
+      map.layers.add(layer);
 
-        // set layerViewRef  = layerView to be able to filter layerView later
-        layerViewRef.current = layerView;
+      const layerView = await view.whenLayerView(layer);
 
-        setLoading(false);
-        viewRef.current = mapView;
-      }
+      // set layerViewRef  = layerView to be able to filter layerView later
+      layerViewRef.current = layerView;
+
+      viewRef.current = view;
     };
 
     init();
