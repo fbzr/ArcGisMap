@@ -109,8 +109,6 @@ const ArcGisMap = () => {
       outSpatialReference: viewRef.current.spatialReference,
     });
 
-    debugger;
-
     layerViewRef.current.filter = {
       where,
     };
