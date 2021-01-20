@@ -1,9 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
+// Map Controller
 import mapController from "../../controllers/Map";
+// Widgets components
 import ExpandWidget from "./ExpandWidget";
-
-import "./MapView.css";
 import Title from "./Title";
+// CSS
+import "./MapView.css";
 
 const MapView = () => {
   const mapViewRef = useRef(null);
