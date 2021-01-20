@@ -1,4 +1,4 @@
-import ArcGisMap from "./components/map/ArcGisMap";
+// import ArcGisMap from "./components/map/ArcGisMap";
 import MapView from "./components/map/MapView";
 
 function App() {
