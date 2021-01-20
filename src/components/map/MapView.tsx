@@ -12,17 +12,18 @@ const MapView = () => {
 
   const [loading, setLoading] = useState<boolean>(true);
 
-  useEffect(() => {
-    (async () => {
-      await mapController.initialize({
-        mapView: mapViewRef,
-        expand: expandWidgetRef,
-        title: titleRef,
-      });
+  const initialize = async () => {
+    await mapController.initialize({
+      mapView: mapViewRef,
+      expand: expandWidgetRef,
+      title: titleRef,
+    });
 
-      // TODO: change from local state to redux state
-      setLoading(false);
-    })();
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    initialize();
   }, []);
 
   return (
