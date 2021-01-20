@@ -29,4 +29,24 @@ const popupTemplate = {
   ],
 };
 
-export default popupTemplate;
+const featureLayer = {
+  url:
+    "https://services1.arcgis.com/F1v0ufATbBQScMtY/ArcGIS/rest/services/FireIncidents/FeatureServer/2",
+  popupTemplate,
+  // outFields: ["*"],
+  outFields: [
+    "LOCADDRESS",
+    "ZIP",
+    "zip",
+    "alarmdate",
+    "incidentnumber",
+    "latitude",
+    "longitude",
+  ],
+};
+
+const mapConfig = {
+  featureLayer,
+};
+
+export default mapConfig;
