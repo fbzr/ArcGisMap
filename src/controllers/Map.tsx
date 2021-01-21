@@ -97,6 +97,7 @@ class MapController {
           unit: "months",
         },
       },
+      playRate: 80,
     });
 
     const timeSliderStart = await this.getTimeExtentDate("start");
