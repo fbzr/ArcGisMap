@@ -47,14 +47,11 @@ class MapController {
     });
 
     this.#mapView?.ui.add(expand, "top-left");
-    if (domRefs.title) {
-      this.#mapView?.ui.add(
-        domRefs.title.current as HTMLDivElement,
-        "top-right"
-      );
+    if (domRefs.title.current) {
+      this.#mapView?.ui.add(domRefs.title.current, "top-right");
     }
 
-    this.#map?.layers.add(this.#featureLayer as __esri.Layer);
+    this.#map?.layers.add(this.#featureLayer as __esri.FeatureLayer);
 
     this.#featureLayerView = await this.#mapView?.whenLayerView(
       this.#featureLayer as __esri.FeatureLayer
@@ -66,14 +63,18 @@ class MapController {
 
   private loadZipCodes = async () => {
     // get distinct zip code values
-    const { features } = (await this.#featureLayer?.queryFeatures({
+    const featureRes = await this.#featureLayer?.queryFeatures({
       returnDistinctValues: true,
       outFields: ["ZIP"],
       where: "ZIP IS NOT NULL AND ZIP <> ''",
       orderByFields: ["ZIP"],
-    })) as __esri.FeatureSet;
+    });
 
-    this.#zipCodeList = features.map((feature) => feature.attributes["ZIP"]);
+    if (featureRes?.features) {
+      this.#zipCodeList = featureRes?.features?.map(
+        (feature) => feature.attributes["ZIP"]
+      );
+    }
   };
 
   updateFeaturesAndView = async (zipCode: string | null = null) => {
@@ -85,17 +86,19 @@ class MapController {
       } as __esri.FeatureFilter;
     }
 
-    const { features } = (await this.#featureLayer?.queryFeatures({
+    const featureRes = await this.#featureLayer?.queryFeatures({
       where,
       returnGeometry: true,
       outSpatialReference: this.#mapView?.spatialReference,
-    })) as __esri.FeatureSet;
+    });
 
-    const geometries: __esri.Geometry[] = features.map(
-      (feature) => feature.geometry
-    );
+    if (featureRes?.features) {
+      const geometries: __esri.Geometry[] = featureRes?.features.map(
+        (feature) => feature.geometry
+      );
 
-    this.#mapView?.goTo(geometries);
+      this.#mapView?.goTo(geometries);
+    }
   };
 
   public get zipCodeList(): string[] {
