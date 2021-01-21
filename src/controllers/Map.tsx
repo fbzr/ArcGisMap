@@ -65,10 +65,24 @@ class MapController {
 
     await this.loadZipCodes();
     await this.updateFeaturesAndView();
-    await this.loadTimeSlider(domRefs.timeSlider);
+    await this.createTimeSlider(domRefs.timeSlider);
   };
 
-  private loadTimeSlider = async (timeSliderRef: RefObject<HTMLDivElement>) => {
+  private getTimeExtentDate = async (date: "start" | "end") => {
+    const res = await this.#featureLayer?.queryFeatures({
+      outFields: ["alarmdate"],
+      orderByFields: date === "start" ? ["alarmdate"] : ["alarmdate desc"],
+      where: "1=1",
+      num: 1, // return only one feature
+    });
+
+    const alarmdate = res?.features[0].attributes["alarmdate"];
+    return new Date(alarmdate);
+  };
+
+  private createTimeSlider = async (
+    timeSliderRef: RefObject<HTMLDivElement>
+  ) => {
     const [TimeSlider, FeatureFilter] = await loadModules([
       "esri/widgets/TimeSlider",
       "esri/views/layers/support/FeatureFilter",
@@ -85,16 +99,16 @@ class MapController {
       },
     });
 
-    this.#mapView?.ui.add(timeSlider, "bottom-left");
+    const timeSliderStart = await this.getTimeExtentDate("start");
+    const timeSliderEnd = await this.getTimeExtentDate("end");
 
-    // TODO: set start and end dynamicaly
-    // start time of the time slider
-    const start = new Date(1992, 0, 1);
     timeSlider.fullTimeExtent = {
-      start,
-      end: new Date(),
-      // end: this.#featureLayer?.timeInfo.fullTimeExtent.end,
+      start: timeSliderStart,
+      end: timeSliderEnd,
     } as __esri.TimeExtent;
+
+    // set initial time slider range to full range
+    timeSlider.values = [timeSliderStart, timeSliderEnd];
 
     timeSlider.watch("timeExtent", () => {
       if (this.#featureLayerView) {
