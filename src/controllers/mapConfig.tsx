@@ -43,6 +43,20 @@ const featureLayer = {
     "latitude",
     "longitude",
   ],
+  timeInfo: {
+    startField: "alarmdate",
+    interval: {
+      // set time interval to one year
+      unit: "years",
+      value: 1,
+    },
+  },
+  // timeExtent is automatically calculated from the
+  // the start and end date fields
+  // timeExtent: {
+  //   start: new Date(1989, 1, 1),
+  //   end: new Date(2021, 1, 1),
+  // },x
 };
 
 const mapConfig = {

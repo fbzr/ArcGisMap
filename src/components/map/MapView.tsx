@@ -11,6 +11,7 @@ const MapView = () => {
   const mapViewRef = useRef(null);
   const expandWidgetRef = useRef(null);
   const titleRef = useRef(null);
+  const timeSliderRef = useRef(null);
 
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -19,6 +20,7 @@ const MapView = () => {
       mapView: mapViewRef,
       expand: expandWidgetRef,
       title: titleRef,
+      timeSlider: timeSliderRef,
     });
 
     setLoading(false);
@@ -31,6 +33,7 @@ const MapView = () => {
   return (
     <>
       <div className="mapView" ref={mapViewRef}></div>
+      <div id="time-slider" ref={timeSliderRef}></div>
       <Title titleRef={titleRef} />
       <ExpandWidget loading={loading} expandWidgetRef={expandWidgetRef} />
     </>

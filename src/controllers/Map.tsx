@@ -6,7 +6,11 @@ setDefaultOptions({ css: true });
 
 interface InitParams {
   // object with dom references necessary for the map
-  [property: string]: RefObject<HTMLDivElement>;
+  // [property: string]: RefObject<HTMLDivElement>;
+  mapView: RefObject<HTMLDivElement>;
+  expand: RefObject<HTMLDivElement>;
+  timeSlider: RefObject<HTMLDivElement>;
+  title: RefObject<HTMLDivElement>;
 }
 
 class MapController {
@@ -38,6 +42,12 @@ class MapController {
 
     this.#featureLayer = new FeatureLayer(mapConfig.featureLayer);
 
+    this.#map?.layers.add(this.#featureLayer as __esri.Layer);
+
+    this.#featureLayerView = await this.#mapView?.whenLayerView(
+      this.#featureLayer as __esri.FeatureLayer
+    );
+
     // expand widget
     const expand = new Expand({
       view: this.#mapView,
@@ -47,18 +57,56 @@ class MapController {
     });
 
     this.#mapView?.ui.add(expand, "top-left");
+
     if (domRefs.title.current) {
       this.#mapView?.ui.add(domRefs.title.current, "top-right");
     }
-
     this.#map?.layers.add(this.#featureLayer as __esri.FeatureLayer);
-
-    this.#featureLayerView = await this.#mapView?.whenLayerView(
-      this.#featureLayer as __esri.FeatureLayer
-    );
 
     await this.loadZipCodes();
     await this.updateFeaturesAndView();
+    await this.loadTimeSlider(domRefs.timeSlider);
+  };
+
+  private loadTimeSlider = async (timeSliderRef: RefObject<HTMLDivElement>) => {
+    const [TimeSlider, FeatureFilter] = await loadModules([
+      "esri/widgets/TimeSlider",
+      "esri/views/layers/support/FeatureFilter",
+    ]);
+
+    const timeSlider = new TimeSlider({
+      container: timeSliderRef.current,
+      view: this.#mapView,
+      stops: {
+        interval: {
+          value: 1,
+          unit: "months",
+        },
+      },
+    });
+
+    this.#mapView?.ui.add(timeSlider, "bottom-left");
+
+    // TODO: set start and end dynamicaly
+    // start time of the time slider
+    const start = new Date(1992, 0, 1);
+    timeSlider.fullTimeExtent = {
+      start,
+      end: new Date(),
+      // end: this.#featureLayer?.timeInfo.fullTimeExtent.end,
+    } as __esri.TimeExtent;
+
+    timeSlider.watch("timeExtent", () => {
+      if (this.#featureLayerView) {
+        const layerView = this.#featureLayerView;
+
+        layerView.filter = new FeatureFilter({
+          where: `alarmdate >= ${timeSlider.timeExtent.start.getTime()} AND alarmdate <= ${timeSlider.timeExtent.end.getTime()}`,
+        });
+      }
+    });
+
+    this.#mapView?.ui.add(timeSlider, "bottom-left");
   };
 
   private loadZipCodes = async () => {
