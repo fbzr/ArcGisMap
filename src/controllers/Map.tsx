@@ -21,6 +21,9 @@ class MapController {
 
   // Other properties
   #zipCodeList: string[] = [];
+  #startDate?: Date;
+  #endDate?: Date;
+  #selectedZipCode?: string;
 
   initialize = async (domRefs: InitParams) => {
     if (!domRefs.mapView.current) return;
@@ -95,16 +98,16 @@ class MapController {
       playRate: 80,
     });
 
-    const timeSliderStart = await this.getTimeExtentDate("start");
-    const timeSliderEnd = await this.getTimeExtentDate("end");
+    this.#startDate = await this.getTimeExtentDate("start");
+    this.#endDate = await this.getTimeExtentDate("end");
 
     timeSlider.fullTimeExtent = {
-      start: timeSliderStart,
-      end: timeSliderEnd,
+      start: this.#startDate,
+      end: this.#endDate,
     } as __esri.TimeExtent;
 
     // set initial time slider range to full range
-    timeSlider.values = [timeSliderStart, timeSliderEnd];
+    timeSlider.values = [this.#startDate, this.#endDate];
 
     timeSlider.watch("timeExtent", async () => {
       if (this.#featureLayer) {
@@ -140,10 +143,15 @@ class MapController {
   };
 
   updateFeaturesAndView = async (zipCode: string | null = null) => {
+    if (zipCode) {
+      this.#selectedZipCode = zipCode;
+    }
+
     const layerView = await this.#mapView?.whenLayerView(
       this.#featureLayer as __esri.FeatureLayer
     );
 
+    // TODO: add startdate and enddate to query
     const where = zipCode
       ? `ZIP = '${zipCode}' OR postalcode = ${zipCode}`
       : "1=1";
