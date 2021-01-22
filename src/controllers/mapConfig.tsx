@@ -33,7 +33,6 @@ const featureLayer = {
   url:
     "https://services1.arcgis.com/F1v0ufATbBQScMtY/ArcGIS/rest/services/FireIncidents/FeatureServer/2",
   popupTemplate,
-  // outFields: ["*"],
   outFields: [
     "LOCADDRESS",
     "ZIP",
