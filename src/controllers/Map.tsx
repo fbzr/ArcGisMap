@@ -83,6 +83,38 @@ class MapController {
       "esri/views/layers/support/FeatureFilter",
     ]);
 
+    const labelFormatFunction = (
+      value: Date | Date[],
+      type: string,
+      element: HTMLElement,
+      layout: "compact" | "wide"
+    ) => {
+      switch (type) {
+        case "min":
+        case "max":
+          if (value instanceof Date) {
+            element.innerText = `${value.getFullYear()}`;
+          }
+          break;
+        case "extent":
+          if (value instanceof Array) {
+            const start = value[0];
+            let startMonth =
+              start.getMonth() + 1 < 10
+                ? `0${start.getMonth() + 1}`
+                : start.getMonth() + 1;
+            const end = value[1];
+            let endMonth =
+              end.getMonth() + 1 < 10
+                ? `0${end.getMonth() + 1}`
+                : end.getMonth() + 1;
+
+            element.innerText = `${startMonth}/${start.getFullYear()} - ${endMonth}/${end.getFullYear()}`;
+          }
+          break;
+      }
+    };
+
     const timeSlider = new TimeSlider({
       container: timeSliderRef.current,
       view: this.#mapView,
@@ -93,6 +125,7 @@ class MapController {
         },
       },
       playRate: 80,
+      labelFormatFunction,
     });
 
     const timeSliderStart = await this.getTimeExtentDate("start");
