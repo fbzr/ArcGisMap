@@ -18,7 +18,6 @@ class MapController {
   #map?: __esri.Map;
   #mapView?: __esri.MapView;
   #featureLayer?: __esri.FeatureLayer;
-  #featureLayerView?: __esri.FeatureLayerView;
 
   // Other properties
   #zipCodeList: string[] = [];
@@ -43,10 +42,6 @@ class MapController {
     this.#featureLayer = new FeatureLayer(mapConfig.featureLayer);
 
     this.#map?.layers.add(this.#featureLayer as __esri.Layer);
-
-    this.#featureLayerView = await this.#mapView?.whenLayerView(
-      this.#featureLayer as __esri.FeatureLayer
-    );
 
     // expand widget
     const expand = new Expand({
@@ -111,13 +106,17 @@ class MapController {
     // set initial time slider range to full range
     timeSlider.values = [timeSliderStart, timeSliderEnd];
 
-    timeSlider.watch("timeExtent", () => {
-      if (this.#featureLayerView) {
-        const layerView = this.#featureLayerView;
+    timeSlider.watch("timeExtent", async () => {
+      if (this.#featureLayer) {
+        const layerView = await this.#mapView?.whenLayerView(
+          this.#featureLayer
+        );
 
-        layerView.filter = new FeatureFilter({
-          where: `alarmdate >= ${timeSlider.timeExtent.start.getTime()} AND alarmdate <= ${timeSlider.timeExtent.end.getTime()}`,
-        });
+        if (layerView) {
+          layerView.filter = new FeatureFilter({
+            where: `alarmdate >= ${timeSlider.timeExtent.start.getTime()} AND alarmdate <= ${timeSlider.timeExtent.end.getTime()}`,
+          });
+        }
       }
     });
 
@@ -141,10 +140,16 @@ class MapController {
   };
 
   updateFeaturesAndView = async (zipCode: string | null = null) => {
-    const where = zipCode ? `ZIP = '${zipCode}'` : "1=1";
+    const layerView = await this.#mapView?.whenLayerView(
+      this.#featureLayer as __esri.FeatureLayer
+    );
 
-    if (this.#featureLayerView) {
-      this.#featureLayerView.filter = {
+    const where = zipCode
+      ? `ZIP = '${zipCode}' OR postalcode = ${zipCode}`
+      : "1=1";
+
+    if (layerView) {
+      layerView.filter = {
         where,
       } as __esri.FeatureFilter;
     }
