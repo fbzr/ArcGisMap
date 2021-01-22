@@ -134,7 +134,7 @@ class MapController {
           unit: "months",
         },
       },
-      playRate: 80,
+      playRate: 120,
       labelFormatFunction,
     });
 
@@ -144,7 +144,7 @@ class MapController {
     timeSlider.fullTimeExtent = {
       start: this.#startDate,
       end: this.#endDate,
-    } as __esri.TimeExtent;
+    };
 
     // set initial time slider range to full range
     timeSlider.values = [this.#startDate, this.#endDate];
@@ -196,8 +196,7 @@ class MapController {
     if (this.#featureLayerView) {
       const layerView = this.#featureLayerView;
 
-      // TODO: add startdate and enddate to query
-      let where = "1=1";
+      let where;
 
       if (this.#startDate && this.#endDate) {
         where = `alarmdate >= ${this.#startDate.getTime()} AND alarmdate <= ${this.#endDate.getTime()}`;
