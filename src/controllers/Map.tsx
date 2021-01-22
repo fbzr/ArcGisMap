@@ -1,6 +1,7 @@
 import { RefObject } from "react";
 import { setDefaultOptions, loadModules } from "esri-loader";
 import mapConfig from "./mapConfig";
+import { start } from "repl";
 
 setDefaultOptions({ css: true });
 
@@ -62,8 +63,8 @@ class MapController {
     this.#map?.layers.add(this.#featureLayer as __esri.FeatureLayer);
 
     await this.loadZipCodes();
-    await this.updateFeaturesAndView();
     await this.createTimeSlider(domRefs.timeSlider);
+    await this.updateFeaturesAndView();
   };
 
   private getTimeExtentDate = async (date: "start" | "end") => {
@@ -143,6 +144,9 @@ class MapController {
     timeSlider.values = [this.#startDate, this.#endDate];
 
     timeSlider.watch("timeExtent", async () => {
+      this.#startDate = timeSlider.timeExtent.start;
+      this.#endDate = timeSlider.timeExtent.end;
+
       if (this.#featureLayer) {
         const layerView = await this.#mapView?.whenLayerView(
           this.#featureLayer
@@ -186,7 +190,7 @@ class MapController {
 
     // TODO: add startdate and enddate to query
     const where = zipCode
-      ? `ZIP = '${zipCode}' OR postalcode = ${zipCode}`
+      ? `(ZIP = '${zipCode}' OR postalcode = ${zipCode})`
       : "1=1";
 
     if (layerView) {
