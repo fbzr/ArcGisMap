@@ -205,6 +205,8 @@ class MapController {
 
       if (zipCode) {
         this.#selectedZipCode = zipCode;
+      } else {
+        this.#selectedZipCode = undefined;
       }
 
       if (this.#selectedZipCode) {
