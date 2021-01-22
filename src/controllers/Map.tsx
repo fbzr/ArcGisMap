@@ -1,7 +1,6 @@
 import { RefObject } from "react";
 import { setDefaultOptions, loadModules } from "esri-loader";
 import mapConfig from "./mapConfig";
-import { start } from "repl";
 
 setDefaultOptions({ css: true });
 
@@ -19,6 +18,7 @@ class MapController {
   #map?: __esri.Map;
   #mapView?: __esri.MapView;
   #featureLayer?: __esri.FeatureLayer;
+  #featureLayerView?: __esri.FeatureLayerView;
 
   // Other properties
   #zipCodeList: string[] = [];
@@ -61,6 +61,12 @@ class MapController {
       this.#mapView?.ui.add(domRefs.title.current, "top-right");
     }
     this.#map?.layers.add(this.#featureLayer as __esri.FeatureLayer);
+
+    if (this.#featureLayer) {
+      this.#featureLayerView = await this.#mapView?.whenLayerView(
+        this.#featureLayer
+      );
+    }
 
     await this.loadZipCodes();
     await this.createTimeSlider(domRefs.timeSlider);
@@ -144,19 +150,22 @@ class MapController {
     timeSlider.values = [this.#startDate, this.#endDate];
 
     timeSlider.watch("timeExtent", async () => {
+      // update start and end dates
       this.#startDate = timeSlider.timeExtent.start;
       this.#endDate = timeSlider.timeExtent.end;
 
-      if (this.#featureLayer) {
-        const layerView = await this.#mapView?.whenLayerView(
-          this.#featureLayer
-        );
+      if (this.#featureLayerView) {
+        let where = `alarmdate >= ${timeSlider.timeExtent.start.getTime()} AND alarmdate <= ${timeSlider.timeExtent.end.getTime()}`;
 
-        if (layerView) {
-          layerView.filter = new FeatureFilter({
-            where: `alarmdate >= ${timeSlider.timeExtent.start.getTime()} AND alarmdate <= ${timeSlider.timeExtent.end.getTime()}`,
-          });
+        if (this.#selectedZipCode) {
+          where += ` AND (ZIP = '${this.#selectedZipCode}' OR postalcode = ${
+            this.#selectedZipCode
+          })`;
         }
+
+        this.#featureLayerView.filter = new FeatureFilter({
+          where,
+        });
       }
     });
 
@@ -180,37 +189,51 @@ class MapController {
   };
 
   updateFeaturesAndView = async (zipCode: string | null = null) => {
-    if (zipCode) {
-      this.#selectedZipCode = zipCode;
-    }
+    const [FeatureFilter] = await loadModules([
+      "esri/views/layers/support/FeatureFilter",
+    ]);
 
-    const layerView = await this.#mapView?.whenLayerView(
-      this.#featureLayer as __esri.FeatureLayer
-    );
+    if (this.#featureLayerView) {
+      const layerView = this.#featureLayerView;
 
-    // TODO: add startdate and enddate to query
-    const where = zipCode
-      ? `(ZIP = '${zipCode}' OR postalcode = ${zipCode})`
-      : "1=1";
+      // TODO: add startdate and enddate to query
+      let where = "1=1";
 
-    if (layerView) {
-      layerView.filter = {
+      if (this.#startDate && this.#endDate) {
+        where = `alarmdate >= ${this.#startDate.getTime()} AND alarmdate <= ${this.#endDate.getTime()}`;
+      }
+
+      if (zipCode) {
+        this.#selectedZipCode = zipCode;
+      }
+
+      if (this.#selectedZipCode) {
+        where += ` AND (ZIP = '${this.#selectedZipCode}' OR postalcode = ${
+          this.#selectedZipCode
+        })`;
+      }
+
+      layerView.filter = new FeatureFilter({
         where,
-      } as __esri.FeatureFilter;
-    }
+      });
 
-    const featureRes = await this.#featureLayer?.queryFeatures({
-      where,
-      returnGeometry: true,
-      outSpatialReference: this.#mapView?.spatialReference,
-    });
+      where = zipCode
+        ? `(ZIP = '${zipCode}' OR postalcode = ${zipCode})`
+        : "1=1";
 
-    if (featureRes?.features) {
-      const geometries: __esri.Geometry[] = featureRes?.features.map(
-        (feature) => feature.geometry
-      );
+      const featureRes = await this.#featureLayer?.queryFeatures({
+        where,
+        returnGeometry: true,
+        outSpatialReference: this.#mapView?.spatialReference,
+      });
 
-      this.#mapView?.goTo(geometries);
+      if (featureRes?.features) {
+        const geometries: __esri.Geometry[] = featureRes?.features.map(
+          (feature) => feature.geometry
+        );
+
+        this.#mapView?.goTo(geometries);
+      }
     }
   };
 
