@@ -230,18 +230,23 @@ class MapController {
         where,
       });
 
-      where = zipCode
-        ? `(ZIP = '${zipCode}' OR postalcode = ${zipCode})`
-        : "1=1";
+      where = zipCode ? `ZIP = '${zipCode}'` : "1=1";
 
-      const featureRes = await this.#fireFeatureLayer?.queryFeatures({
+      let featuresResponse;
+
+      // If zipcode was selected center zipcode area feature, else center all fire incidents features
+      const featureLayer = zipCode
+        ? this.#zipcodeFeatureLayer
+        : this.#fireFeatureLayer;
+
+      featuresResponse = await featureLayer?.queryFeatures({
         where,
         returnGeometry: true,
         outSpatialReference: this.#mapView?.spatialReference,
       });
 
-      if (featureRes?.features) {
-        const geometries: __esri.Geometry[] = featureRes?.features.map(
+      if (featuresResponse?.features) {
+        const geometries: __esri.Geometry[] = featuresResponse?.features.map(
           (feature) => feature.geometry
         );
 
