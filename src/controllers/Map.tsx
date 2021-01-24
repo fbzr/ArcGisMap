@@ -20,6 +20,7 @@ class MapController {
   #fireFeatureLayer?: __esri.FeatureLayer;
   #zipcodeFeatureLayer?: __esri.FeatureLayer;
   #fireFeatureLayerView?: __esri.FeatureLayerView;
+  #zipcodeFeatureLayerView?: __esri.FeatureLayerView;
 
   // Other properties
   #zipCodeList: string[] = [];
@@ -69,6 +70,10 @@ class MapController {
 
       this.#fireFeatureLayerView = await this.#mapView?.whenLayerView(
         this.#fireFeatureLayer
+      );
+
+      this.#zipcodeFeatureLayerView = await this.#mapView?.whenLayerView(
+        this.#zipcodeFeatureLayer
       );
 
       await this.loadZipCodes();
@@ -197,8 +202,9 @@ class MapController {
       "esri/views/layers/support/FeatureFilter",
     ]);
 
-    if (this.#fireFeatureLayerView) {
-      const layerView = this.#fireFeatureLayerView;
+    if (this.#fireFeatureLayerView && this.#zipcodeFeatureLayerView) {
+      const fireLayerView = this.#fireFeatureLayerView;
+      const zipcodeLayerView = this.#zipcodeFeatureLayerView;
 
       let where: string = "1=1";
 
@@ -213,16 +219,14 @@ class MapController {
           this.#selectedZipCode
         })`;
 
-        if (this.#zipcodeFeatureLayer) {
-          this.#zipcodeFeatureLayer.visible = true;
-        }
-      } else {
-        if (this.#zipcodeFeatureLayer) {
-          this.#zipcodeFeatureLayer.visible = false;
-        }
+        zipcodeLayerView.filter = new FeatureFilter({
+          where: `ZIP = '${this.#selectedZipCode}'`,
+        });
       }
 
-      layerView.filter = new FeatureFilter({
+      zipcodeLayerView.visible = !!this.#selectedZipCode;
+
+      fireLayerView.filter = new FeatureFilter({
         where,
       });
 
