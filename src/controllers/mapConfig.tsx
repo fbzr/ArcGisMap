@@ -29,7 +29,7 @@ const popupTemplate = {
   ],
 };
 
-const featureLayer = {
+const lvFireFeatureLayer = {
   url:
     "https://services1.arcgis.com/F1v0ufATbBQScMtY/ArcGIS/rest/services/FireIncidents/FeatureServer/2",
   popupTemplate,
@@ -44,8 +44,16 @@ const featureLayer = {
   ],
 };
 
+const zipcodeLayer = {
+  url:
+    "https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services/USA_ZIP_Codes_2014/FeatureServer/0",
+  outFields: ["ZIP"],
+  visible: false,
+};
+
 const mapConfig = {
-  featureLayer,
+  lvFireFeatureLayer,
+  zipcodeLayer,
 };
 
 export default mapConfig;
