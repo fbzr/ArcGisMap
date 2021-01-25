@@ -1,5 +1,7 @@
 import { RefObject } from "react";
 import mapController from "../../../controllers/Map";
+// CSS
+import "./ExpandWidget.css";
 
 interface ExpandWidgetProps {
   // TODO: fetch from redux store
@@ -7,7 +9,9 @@ interface ExpandWidgetProps {
   expandWidgetRef: RefObject<HTMLDivElement>;
 }
 
-const ExpandWidget = ({ loading, expandWidgetRef }: ExpandWidgetProps) => {
+const ExpandWidget = (props: ExpandWidgetProps) => {
+  const { loading, expandWidgetRef } = props;
+
   const handleClick = async (
     event: React.MouseEvent<HTMLDivElement> | null
   ) => {

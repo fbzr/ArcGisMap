@@ -1,0 +1,11 @@
+.title-container {
+  padding: 7px 14px;
+  background-color: rgba(36, 36, 36, 0.9);
+}
+
+#title-text {
+  font-size: 20pt;
+  font-weight: 60;
+  margin-left: 5px;
+  margin-right: 5px;
+}

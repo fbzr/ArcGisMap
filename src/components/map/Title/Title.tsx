@@ -1,4 +1,5 @@
 import { RefObject } from "react";
+import "./Title.css";
 
 interface TitleProps {
   titleRef: RefObject<HTMLDivElement>;
