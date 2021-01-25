@@ -17,8 +17,10 @@ class MapController {
   // ESRI
   #map?: __esri.Map;
   #mapView?: __esri.MapView;
-  #featureLayer?: __esri.FeatureLayer;
-  #featureLayerView?: __esri.FeatureLayerView;
+  #fireFeatureLayer?: __esri.FeatureLayer;
+  #zipcodeFeatureLayer?: __esri.FeatureLayer;
+  #fireFeatureLayerView?: __esri.FeatureLayerView;
+  #zipcodeFeatureLayerView?: __esri.FeatureLayerView;
 
   // Other properties
   #zipCodeList: string[] = [];
@@ -43,9 +45,8 @@ class MapController {
       map: this.#map,
     });
 
-    this.#featureLayer = new FeatureLayer(mapConfig.featureLayer);
-
-    this.#map?.layers.add(this.#featureLayer as __esri.Layer);
+    this.#fireFeatureLayer = new FeatureLayer(mapConfig.lvFireFeatureLayer);
+    this.#zipcodeFeatureLayer = new FeatureLayer(mapConfig.zipcodeLayer);
 
     // expand widget
     const expand = new Expand({
@@ -60,21 +61,29 @@ class MapController {
     if (domRefs.title.current) {
       this.#mapView?.ui.add(domRefs.title.current, "top-right");
     }
-    this.#map?.layers.add(this.#featureLayer as __esri.FeatureLayer);
 
-    if (this.#featureLayer) {
-      this.#featureLayerView = await this.#mapView?.whenLayerView(
-        this.#featureLayer
+    if (this.#fireFeatureLayer && this.#zipcodeFeatureLayer) {
+      this.#map?.layers.addMany([
+        this.#zipcodeFeatureLayer,
+        this.#fireFeatureLayer,
+      ]);
+
+      this.#fireFeatureLayerView = await this.#mapView?.whenLayerView(
+        this.#fireFeatureLayer
       );
-    }
 
-    await this.loadZipCodes();
-    await this.createTimeSlider(domRefs.timeSlider);
-    await this.updateFeaturesAndView();
+      this.#zipcodeFeatureLayerView = await this.#mapView?.whenLayerView(
+        this.#zipcodeFeatureLayer
+      );
+
+      await this.loadZipCodes();
+      await this.createTimeSlider(domRefs.timeSlider);
+      await this.updateFeaturesAndView();
+    }
   };
 
   private getTimeExtentDate = async (date: "start" | "end") => {
-    const res = await this.#featureLayer?.queryFeatures({
+    const res = await this.#fireFeatureLayer?.queryFeatures({
       outFields: ["alarmdate"],
       orderByFields: date === "start" ? ["alarmdate"] : ["alarmdate desc"],
       where: "1=1",
@@ -154,7 +163,7 @@ class MapController {
       this.#startDate = timeSlider.timeExtent.start;
       this.#endDate = timeSlider.timeExtent.end;
 
-      if (this.#featureLayerView) {
+      if (this.#fireFeatureLayerView) {
         let where = `alarmdate >= ${timeSlider.timeExtent.start.getTime()} AND alarmdate <= ${timeSlider.timeExtent.end.getTime()}`;
 
         if (this.#selectedZipCode) {
@@ -163,7 +172,7 @@ class MapController {
           })`;
         }
 
-        this.#featureLayerView.filter = new FeatureFilter({
+        this.#fireFeatureLayerView.filter = new FeatureFilter({
           where,
         });
       }
@@ -174,7 +183,7 @@ class MapController {
 
   private loadZipCodes = async () => {
     // get distinct zip code values
-    const featureRes = await this.#featureLayer?.queryFeatures({
+    const featureRes = await this.#fireFeatureLayer?.queryFeatures({
       returnDistinctValues: true,
       outFields: ["ZIP"],
       where: "ZIP IS NOT NULL AND ZIP <> ''",
@@ -193,43 +202,51 @@ class MapController {
       "esri/views/layers/support/FeatureFilter",
     ]);
 
-    if (this.#featureLayerView) {
-      const layerView = this.#featureLayerView;
+    if (this.#fireFeatureLayerView && this.#zipcodeFeatureLayerView) {
+      const fireLayerView = this.#fireFeatureLayerView;
+      const zipcodeLayerView = this.#zipcodeFeatureLayerView;
 
-      let where;
+      let where: string = "1=1";
 
       if (this.#startDate && this.#endDate) {
         where = `alarmdate >= ${this.#startDate.getTime()} AND alarmdate <= ${this.#endDate.getTime()}`;
       }
 
-      if (zipCode) {
-        this.#selectedZipCode = zipCode;
-      } else {
-        this.#selectedZipCode = undefined;
-      }
+      this.#selectedZipCode = zipCode ?? undefined;
 
       if (this.#selectedZipCode) {
         where += ` AND (ZIP = '${this.#selectedZipCode}' OR postalcode = ${
           this.#selectedZipCode
         })`;
+
+        zipcodeLayerView.filter = new FeatureFilter({
+          where: `ZIP = '${this.#selectedZipCode}'`,
+        });
       }
 
-      layerView.filter = new FeatureFilter({
+      zipcodeLayerView.visible = !!this.#selectedZipCode;
+
+      fireLayerView.filter = new FeatureFilter({
         where,
       });
 
-      where = zipCode
-        ? `(ZIP = '${zipCode}' OR postalcode = ${zipCode})`
-        : "1=1";
+      where = zipCode ? `ZIP = '${zipCode}'` : "1=1";
 
-      const featureRes = await this.#featureLayer?.queryFeatures({
+      let featuresResponse;
+
+      // If zipcode was selected center zipcode area feature, else center all fire incidents features
+      const featureLayer = zipCode
+        ? this.#zipcodeFeatureLayer
+        : this.#fireFeatureLayer;
+
+      featuresResponse = await featureLayer?.queryFeatures({
         where,
         returnGeometry: true,
         outSpatialReference: this.#mapView?.spatialReference,
       });
 
-      if (featureRes?.features) {
-        const geometries: __esri.Geometry[] = featureRes?.features.map(
+      if (featuresResponse?.features) {
+        const geometries: __esri.Geometry[] = featuresResponse?.features.map(
           (feature) => feature.geometry
         );
 
