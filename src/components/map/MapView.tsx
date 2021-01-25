@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef } from "react";
 // Map Controller
 import mapController from "../../controllers/Map";
 // Widgets components
@@ -13,8 +13,6 @@ const MapView = () => {
   const titleRef = useRef(null);
   const timeSliderRef = useRef(null);
 
-  const [loading, setLoading] = useState<boolean>(true);
-
   const initialize = async () => {
     await mapController.initialize({
       mapView: mapViewRef,
@@ -22,8 +20,6 @@ const MapView = () => {
       title: titleRef,
       timeSlider: timeSliderRef,
     });
-
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -35,7 +31,7 @@ const MapView = () => {
       <div className="mapView" ref={mapViewRef}></div>
       <div id="time-slider" ref={timeSliderRef}></div>
       <Title titleRef={titleRef} />
-      <ExpandWidget loading={loading} expandWidgetRef={expandWidgetRef} />
+      <ExpandWidget expandWidgetRef={expandWidgetRef} />
     </>
   );
 };
