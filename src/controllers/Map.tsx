@@ -1,4 +1,8 @@
 import { RefObject } from "react";
+// redux
+import store from "../redux/store";
+import { setMapLoaded, setSelectedZipCode } from "../redux/slices/map";
+// esri
 import { setDefaultOptions, loadModules } from "esri-loader";
 import mapConfig from "./mapConfig";
 
@@ -54,6 +58,7 @@ class MapController {
       content: domRefs.expand.current,
       expandIconClass: "esri-icon-locate",
       group: "top-left",
+      autoCollapse: true,
     });
 
     this.#mapView?.ui.add(expand, "top-left");
@@ -79,6 +84,10 @@ class MapController {
       await this.loadZipCodes();
       await this.createTimeSlider(domRefs.timeSlider);
       await this.updateFeaturesAndView();
+
+      this.#mapView?.when(() => {
+        store.dispatch(setMapLoaded(true));
+      });
     }
   };
 
@@ -213,6 +222,8 @@ class MapController {
       }
 
       this.#selectedZipCode = zipCode ?? undefined;
+
+      store.dispatch(setSelectedZipCode(this.#selectedZipCode));
 
       if (this.#selectedZipCode) {
         where += ` AND (ZIP = '${this.#selectedZipCode}' OR postalcode = ${
