@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useState } from "react";
 // Map Controller
 import mapController from "../../controllers/Map";
 // Widgets components
-import ExpandWidget from "./ExpandWidget";
-import Title from "./Title";
+import ExpandWidget from "./ExpandWidget/ExpandWidget";
+import Title from "./Title/Title";
 // CSS
 import "./MapView.css";
 

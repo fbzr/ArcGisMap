@@ -52,7 +52,7 @@ class MapController {
     const expand = new Expand({
       view: this.#mapView,
       content: domRefs.expand.current,
-      expandIconClass: "esri-icon-filter",
+      expandIconClass: "esri-icon-locate",
       group: "top-left",
     });
 
