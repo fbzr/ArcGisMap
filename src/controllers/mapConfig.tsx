@@ -48,6 +48,7 @@ const zipcodeLayer = {
   url:
     "https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services/USA_ZIP_Codes_2014/FeatureServer/0",
   outFields: ["ZIP"],
+  definitionExpression: "STATE = 'NV'",
   visible: false,
   renderer: {
     type: "simple",
