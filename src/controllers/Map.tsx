@@ -54,6 +54,7 @@ class MapController {
       content: domRefs.expand.current,
       expandIconClass: "esri-icon-locate",
       group: "top-left",
+      autoCollapse: true,
     });
 
     this.#mapView?.ui.add(expand, "top-left");
