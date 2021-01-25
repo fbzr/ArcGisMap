@@ -49,6 +49,17 @@ const zipcodeLayer = {
     "https://services.arcgis.com/P3ePLMYs2RVChkJx/ArcGIS/rest/services/USA_ZIP_Codes_2014/FeatureServer/0",
   outFields: ["ZIP"],
   visible: false,
+  renderer: {
+    type: "simple",
+    symbol: {
+      type: "simple-fill",
+      color: [0, 121, 193, 0.1],
+      outline: {
+        width: 1,
+        color: [0, 0, 0, 0.3],
+      },
+    },
+  },
 };
 
 const mapConfig = {
