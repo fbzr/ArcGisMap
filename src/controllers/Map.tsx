@@ -56,7 +56,7 @@ class MapController {
     const expand = new Expand({
       view: this.#mapView,
       content: domRefs.expand.current,
-      expandIconClass: "esri-icon-locate",
+      expandIconClass: "esri-icon-filter",
       group: "top-left",
       autoCollapse: true,
     });
