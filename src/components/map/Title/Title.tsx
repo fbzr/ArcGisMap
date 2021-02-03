@@ -2,14 +2,14 @@ import { RefObject } from "react";
 import "./Title.scss";
 // Redux
 import { useSelector } from "react-redux";
-import { RootState } from "../../../redux/store";
+import { selectedZipCode as selectedZipCodeSelector } from "../../../redux/slices/map";
 
 interface TitleProps {
   titleRef: RefObject<HTMLDivElement>;
 }
 
 const Title = ({ titleRef }: TitleProps) => {
-  const { selectedZipCode } = useSelector((state: RootState) => state.map);
+  const selectedZipCode = useSelector(selectedZipCodeSelector);
 
   return (
     <div ref={titleRef} className="esri-widget title-container ">

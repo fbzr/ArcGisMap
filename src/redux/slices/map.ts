@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import {RootState} from '../store';
 interface SliceState {
   mapLoaded: boolean;
   selectedZipCode: string | undefined;
@@ -26,5 +27,8 @@ export const {
   setMapLoaded,
   setSelectedZipCode
 } = mapSlice.actions;
+
+export const mapLoaded = (state: RootState) => state.map.mapLoaded;
+export const selectedZipCode = (state: RootState) => state.map.selectedZipCode;
 
 export default mapSlice.reducer;
