@@ -56,7 +56,7 @@ class MapController {
     const expand = new Expand({
       view: this.#mapView,
       content: domRefs.expand.current,
-      expandIconClass: "esri-icon-locate",
+      expandIconClass: "esri-icon-filter",
       group: "top-left",
       autoCollapse: true,
     });
@@ -206,65 +206,90 @@ class MapController {
     }
   };
 
-  updateFeaturesAndView = async (zipCode: string | null = null) => {
+  private centerMap = async (features: __esri.Graphic[]) => {
+    const geometries: __esri.Geometry[] = features.map(
+      (feature) => feature.geometry
+    );
+
+    this.#mapView?.goTo(geometries);
+  };
+
+  private updateFeatures = async () => {
+    if (this.#startDate && this.#endDate) {
+      const fireLayerWhere = `alarmdate >= '${this.getQueryDateFormat(
+        this.#startDate
+      )}' AND alarmdate <= '${this.getQueryDateFormat(this.#endDate)}'`;
+
+      const fireFeaturesResponse = await this.#fireFeatureLayer?.queryFeatures({
+        where: fireLayerWhere,
+        returnGeometry: !this.#selectedZipCode,
+        outSpatialReference: this.#mapView?.spatialReference,
+      });
+
+      const zipcodeFeaturesResponse = await this.#zipcodeFeatureLayer?.queryFeatures(
+        {
+          where: this.#selectedZipCode
+            ? `ZIP = '${this.#selectedZipCode}'`
+            : "1=1",
+          returnGeometry: !!this.#selectedZipCode,
+          outSpatialReference: this.#mapView?.spatialReference,
+        }
+      );
+
+      if (zipcodeFeaturesResponse && fireFeaturesResponse) {
+        // if zipcode is selected map is centered based on zipcode
+        // if not it's centered based on all fire features
+        const features = this.#selectedZipCode
+          ? zipcodeFeaturesResponse.features
+          : fireFeaturesResponse.features;
+        this.centerMap(features);
+      }
+    }
+  };
+
+  private updateViews = async () => {
     const [FeatureFilter] = await loadModules([
       "esri/views/layers/support/FeatureFilter",
     ]);
 
-    if (this.#fireFeatureLayerView && this.#zipcodeFeatureLayerView) {
-      const fireLayerView = this.#fireFeatureLayerView;
-      const zipcodeLayerView = this.#zipcodeFeatureLayerView;
-
-      let where: string = "1=1";
-
-      if (this.#startDate && this.#endDate) {
-        where = `alarmdate >= ${this.#startDate.getTime()} AND alarmdate <= ${this.#endDate.getTime()}`;
-      }
-
-      this.#selectedZipCode = zipCode ?? undefined;
-
-      store.dispatch(setSelectedZipCode(this.#selectedZipCode));
+    // Fire layer view
+    if (this.#fireFeatureLayerView) {
+      let fireLayerWhere: string = `alarmdate >= ${this.#startDate?.getTime()} AND alarmdate <= ${this.#endDate?.getTime()}`;
 
       if (this.#selectedZipCode) {
-        where += ` AND (ZIP = '${this.#selectedZipCode}' OR postalcode = ${
+        fireLayerWhere += ` AND (ZIP = '${
           this.#selectedZipCode
-        })`;
-
-        zipcodeLayerView.filter = new FeatureFilter({
-          where: `ZIP = '${this.#selectedZipCode}'`,
-        });
+        }' OR postalcode = ${this.#selectedZipCode})`;
       }
 
-      zipcodeLayerView.visible = !!this.#selectedZipCode;
+      this.#fireFeatureLayerView.filter = new FeatureFilter({
+        where: fireLayerWhere,
+      });
+    }
 
-      fireLayerView.filter = new FeatureFilter({
-        where,
+    // Zipcode layer view
+    if (this.#zipcodeFeatureLayerView) {
+      this.#zipcodeFeatureLayerView.filter = new FeatureFilter({
+        where: `ZIP = '${this.#selectedZipCode}'`,
       });
 
-      where = zipCode ? `ZIP = '${zipCode}'` : "1=1";
-
-      let featuresResponse;
-
-      // If zipcode was selected center zipcode area feature, else center all fire incidents features
-      const featureLayer = zipCode
-        ? this.#zipcodeFeatureLayer
-        : this.#fireFeatureLayer;
-
-      featuresResponse = await featureLayer?.queryFeatures({
-        where,
-        returnGeometry: true,
-        outSpatialReference: this.#mapView?.spatialReference,
-      });
-
-      if (featuresResponse?.features) {
-        const geometries: __esri.Geometry[] = featuresResponse?.features.map(
-          (feature) => feature.geometry
-        );
-
-        this.#mapView?.goTo(geometries);
-      }
+      this.#zipcodeFeatureLayerView.visible = !!this.#selectedZipCode;
     }
   };
+
+  updateFeaturesAndView = async (zipCode: string | null = null) => {
+    if (this.#fireFeatureLayerView && this.#zipcodeFeatureLayerView) {
+      this.#selectedZipCode = zipCode ?? undefined;
+      store.dispatch(setSelectedZipCode(this.#selectedZipCode));
+
+      await this.updateFeatures();
+      await this.updateViews();
+    }
+  };
+
+  private getQueryDateFormat(date: Date): string {
+    return `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+  }
 
   public get zipCodeList(): string[] {
     return this.#zipCodeList;
