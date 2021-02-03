@@ -7,7 +7,6 @@ import { useSelector } from "react-redux";
 import { mapLoaded as mapLoadedSelector } from "../../../redux/slices/map";
 
 interface ExpandWidgetProps {
-  // TODO: fetch from redux store
   expandWidgetRef: RefObject<HTMLDivElement>;
 }
 
