@@ -5,7 +5,7 @@ import mapController from "../../controllers/Map";
 import ExpandWidget from "./ExpandWidget/ExpandWidget";
 import Title from "./Title/Title";
 // CSS
-import "./MapView.css";
+import "./MapView.scss";
 
 const MapView = () => {
   const mapViewRef = useRef(null);
