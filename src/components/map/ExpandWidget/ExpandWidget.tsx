@@ -1,7 +1,7 @@
 import { RefObject } from "react";
 import mapController from "../../../controllers/Map";
 // CSS
-import "./ExpandWidget.css";
+import "./ExpandWidget.scss";
 // Redux
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/store";

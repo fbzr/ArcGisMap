@@ -1,5 +1,5 @@
 import { RefObject } from "react";
-import "./Title.css";
+import "./Title.scss";
 // Redux
 import { useSelector } from "react-redux";
 import { RootState } from "../../../redux/store";
