@@ -4,7 +4,7 @@ import mapController from "../../../controllers/Map";
 import "./ExpandWidget.scss";
 // Redux
 import { useSelector } from "react-redux";
-import { RootState } from "../../../redux/store";
+import { mapLoaded as mapLoadedSelector } from "../../../redux/slices/map";
 
 interface ExpandWidgetProps {
   // TODO: fetch from redux store
@@ -13,7 +13,7 @@ interface ExpandWidgetProps {
 
 const ExpandWidget = (props: ExpandWidgetProps) => {
   const { expandWidgetRef } = props;
-  const { mapLoaded } = useSelector((state: RootState) => state.map);
+  const mapLoaded = useSelector(mapLoadedSelector);
 
   const handleClick = async (
     event: React.MouseEvent<HTMLDivElement> | null
