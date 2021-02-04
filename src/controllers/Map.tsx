@@ -118,8 +118,19 @@ class MapController {
       num: 1, // return only one feature
     });
 
-    const alarmdate = res?.features[0].attributes["alarmdate"];
-    return new Date(alarmdate);
+    const alarmdateRes: string = res?.features[0].attributes["alarmdate"];
+    const alarmdate = new Date(alarmdateRes);
+
+    if (date === "start") {
+      return new Date(alarmdate.getUTCFullYear(), alarmdate.getMonth());
+    }
+
+    const y = alarmdate.getUTCFullYear();
+    const m = alarmdate.getMonth();
+
+    return date === "start"
+      ? new Date(y, m, 1, 0, 0, 0)
+      : new Date(y, m + 1, 0, 23, 59, 59);
   };
 
   private createTimeSlider = async (timeSliderElement: HTMLDivElement) => {
@@ -205,7 +216,6 @@ class MapController {
       view: this.#mapView,
       content: timeSliderElement,
       expandIconClass: "esri-icon-time-clock",
-      autoCollapse: true,
     });
 
     this.#mapView?.ui.add(timeSliderExpand, "bottom-left");
