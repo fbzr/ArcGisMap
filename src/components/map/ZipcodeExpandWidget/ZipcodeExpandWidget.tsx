@@ -1,7 +1,7 @@
 import { RefObject } from "react";
 import mapController from "../../../controllers/Map";
 // CSS
-import "./ExpandWidget.scss";
+import "./ZipcodeExpandWidget.scss";
 // Redux
 import { useSelector } from "react-redux";
 import { mapLoaded as mapLoadedSelector } from "../../../redux/slices/map";
