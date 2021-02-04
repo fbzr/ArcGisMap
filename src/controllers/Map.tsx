@@ -8,6 +8,7 @@ import MapView from "@arcgis/core/views/MapView";
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import FeatureLayerView from "@arcgis/core/views/layers/FeatureLayerView";
 import Expand from "@arcgis/core/widgets/Expand";
+import BasemapGallery from "@arcgis/core/widgets/BasemapGallery";
 import TimeSlider from "@arcgis/core/widgets/TimeSlider";
 import FeatureFilter from "@arcgis/core/views/layers/support/FeatureFilter";
 import TimeInterval from "@arcgis/core/TimeInterval";
@@ -19,9 +20,9 @@ interface InitParams {
   // object with dom references necessary for the map
   // [property: string]: RefObject<HTMLDivElement>;
   mapView: RefObject<HTMLDivElement>;
-  expand: RefObject<HTMLDivElement>;
-  timeSlider: RefObject<HTMLDivElement>;
   title: RefObject<HTMLDivElement>;
+  zipcodeExpandWidget: RefObject<HTMLDivElement>;
+  timeSlider: RefObject<HTMLDivElement>;
 }
 
 class MapController {
@@ -42,7 +43,7 @@ class MapController {
   initialize = async (domRefs: InitParams) => {
     if (
       !domRefs.mapView.current ||
-      !domRefs.expand.current ||
+      !domRefs.zipcodeExpandWidget.current ||
       !domRefs.title.current ||
       !domRefs.timeSlider.current
     ) {
@@ -59,16 +60,29 @@ class MapController {
     this.#fireFeatureLayer = new FeatureLayer(mapConfig.lvFireFeatureLayer);
     this.#zipcodeFeatureLayer = new FeatureLayer(mapConfig.zipcodeLayer);
 
-    // expand widget
-    const expand = new Expand({
+    // zipcode expand widget
+    const zipcodeExpand = new Expand({
       view: this.#mapView,
-      content: domRefs.expand.current,
+      content: domRefs.zipcodeExpandWidget.current,
       expandIconClass: "esri-icon-filter",
       group: "top-left",
       autoCollapse: true,
     });
 
-    this.#mapView?.ui.add(expand, "top-left");
+    const basemapGallery = new BasemapGallery({
+      view: this.#mapView,
+    });
+
+    const basemapGalleryExpand = new Expand({
+      view: this.#mapView,
+      content: basemapGallery,
+      expandIconClass: "esri-icon-basemap",
+      autoCollapse: true,
+    });
+
+    this.#mapView.ui.add(basemapGalleryExpand, "top-left");
+
+    this.#mapView?.ui.add(zipcodeExpand, "top-left");
 
     this.#mapView?.ui.add(domRefs.title.current, "top-right");
 
@@ -187,7 +201,14 @@ class MapController {
       }
     });
 
-    this.#mapView?.ui.add(timeSlider, "bottom-left");
+    const timeSliderExpand = new Expand({
+      view: this.#mapView,
+      content: timeSliderElement,
+      expandIconClass: "esri-icon-time-clock",
+      autoCollapse: true,
+    });
+
+    this.#mapView?.ui.add(timeSliderExpand, "bottom-left");
   };
 
   private loadZipCodes = async () => {
