@@ -3,11 +3,19 @@ import {RootState} from '../store';
 interface SliceState {
   mapLoaded: boolean;
   selectedZipCode: string | undefined;
+  timeExtent: {
+    startDate: Date | undefined,
+    endDate: Date | undefined,
+  }
 }
 
 const initialState: SliceState = {
   mapLoaded: false,
   selectedZipCode: undefined,
+  timeExtent: {
+    startDate: undefined,
+    endDate: undefined
+  }
 };
 
 export const mapSlice = createSlice({
@@ -20,15 +28,21 @@ export const mapSlice = createSlice({
     setSelectedZipCode: (state, action: PayloadAction<string | undefined>) => {
       state.selectedZipCode = action.payload;
     },
+    setTimeExtent: (state, action: PayloadAction<{start: Date, end: Date}>) => {
+      state.timeExtent.startDate = action.payload.start;
+      state.timeExtent.endDate = action.payload.end;
+    }
   },
 });
 
 export const {
   setMapLoaded,
-  setSelectedZipCode
+  setSelectedZipCode,
+  setTimeExtent
 } = mapSlice.actions;
 
 export const mapLoaded = (state: RootState) => state.map.mapLoaded;
 export const selectedZipCode = (state: RootState) => state.map.selectedZipCode;
+export const timeExtent = (state: RootState) => state.map.timeExtent;
 
 export default mapSlice.reducer;

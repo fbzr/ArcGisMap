@@ -1,7 +1,11 @@
 import { RefObject } from "react";
 // redux
 import store from "../redux/store";
-import { setMapLoaded, setSelectedZipCode } from "../redux/slices/map";
+import {
+  setMapLoaded,
+  setSelectedZipCode,
+  setTimeExtent,
+} from "../redux/slices/map";
 // esri
 import Map from "@arcgis/core/Map";
 import MapView from "@arcgis/core/views/MapView";
@@ -15,6 +19,8 @@ import TimeInterval from "@arcgis/core/TimeInterval";
 import TimeExtent from "@arcgis/core/TimeExtent";
 // Config
 import mapConfig from "./mapConfig";
+//
+import { format } from "date-fns";
 
 interface InitParams {
   // object with dom references necessary for the map
@@ -118,8 +124,16 @@ class MapController {
       num: 1, // return only one feature
     });
 
-    const alarmdate = res?.features[0].attributes["alarmdate"];
-    return new Date(alarmdate);
+    const alarmdateRes: string = res?.features[0].attributes["alarmdate"];
+    const alarmdate = new Date(alarmdateRes);
+
+    const y = alarmdate.getUTCFullYear();
+    const m = alarmdate.getMonth();
+
+    // return first day of the month if date === "start" and last day if date === "end"
+    return date === "start"
+      ? new Date(y, m, 1, 0, 0, 0)
+      : new Date(y, m + 1, 0, 23, 59, 59);
   };
 
   private createTimeSlider = async (timeSliderElement: HTMLDivElement) => {
@@ -139,18 +153,13 @@ class MapController {
         case "extent":
           if (value instanceof Array) {
             const start = value[0];
-            let startMonth =
-              start.getMonth() + 1 < 10
-                ? `0${start.getMonth() + 1}`
-                : start.getMonth() + 1;
             const end = value[1];
-            let endMonth =
-              end.getMonth() + 1 < 10
-                ? `0${end.getMonth() + 1}`
-                : end.getMonth() + 1;
 
             if (element) {
-              element.innerText = `${startMonth}/${start.getFullYear()} - ${endMonth}/${end.getFullYear()}`;
+              element.innerHTML = `${format(start, "MMM/yyyy")} - ${format(
+                end,
+                "MMM/yyyy"
+              )}`;
             }
           }
           break;
@@ -172,6 +181,12 @@ class MapController {
 
     this.#startDate = await this.getTimeExtentDate("start");
     this.#endDate = await this.getTimeExtentDate("end");
+    store.dispatch(
+      setTimeExtent({
+        start: this.#startDate,
+        end: this.#endDate,
+      })
+    );
 
     timeSlider.fullTimeExtent = new TimeExtent({
       start: this.#startDate,
@@ -185,6 +200,9 @@ class MapController {
       // update start and end dates
       this.#startDate = timeSlider.timeExtent.start;
       this.#endDate = timeSlider.timeExtent.end;
+      store.dispatch(
+        setTimeExtent({ start: this.#startDate, end: this.#endDate })
+      );
 
       if (this.#fireFeatureLayerView) {
         let where = `alarmdate >= ${timeSlider.timeExtent.start.getTime()} AND alarmdate <= ${timeSlider.timeExtent.end.getTime()}`;
@@ -205,7 +223,6 @@ class MapController {
       view: this.#mapView,
       content: timeSliderElement,
       expandIconClass: "esri-icon-time-clock",
-      autoCollapse: true,
     });
 
     this.#mapView?.ui.add(timeSliderExpand, "bottom-left");
