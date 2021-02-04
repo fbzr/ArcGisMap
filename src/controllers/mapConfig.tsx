@@ -1,3 +1,6 @@
+import SimpleRenderer from "@arcgis/core/renderers/SimpleRenderer";
+import SimpleFillSymbol from "@arcgis/core/symbols/SimpleFillSymbol";
+
 const popupTemplate = {
   // autocasts as new PopupTemplate()
   title: "Fire details",
@@ -50,17 +53,15 @@ const zipcodeLayer = {
   outFields: ["ZIP"],
   definitionExpression: "STATE = 'NV'",
   visible: false,
-  renderer: {
-    type: "simple",
-    symbol: {
-      type: "simple-fill",
+  renderer: new SimpleRenderer({
+    symbol: new SimpleFillSymbol({
       color: [0, 121, 193, 0.1],
       outline: {
         width: 1,
         color: [0, 0, 0, 0.3],
       },
-    },
-  },
+    }),
+  }),
 };
 
 const mapConfig = {

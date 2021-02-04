@@ -1,7 +1,9 @@
+$bg-primary: #252525;
+
 .filter-container {
   max-height: 500px;
   overflow-y: auto;
-  background-color: white;
+  background-color: $bg-primary;
 
   .filter-item {
     width: 100%;
