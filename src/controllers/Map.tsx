@@ -38,7 +38,14 @@ class MapController {
   #selectedZipCode?: string;
 
   initialize = async (domRefs: InitParams) => {
-    if (!domRefs.mapView.current) return;
+    if (
+      !domRefs.mapView.current ||
+      !domRefs.expand.current ||
+      !domRefs.title.current ||
+      !domRefs.timeSlider.current
+    ) {
+      return;
+    }
 
     this.#map = new Map({ basemap: "topo-vector" });
 
@@ -53,7 +60,7 @@ class MapController {
     // expand widget
     const expand = new Expand({
       view: this.#mapView,
-      content: domRefs.expand.current as Node,
+      content: domRefs.expand.current,
       expandIconClass: "esri-icon-filter",
       group: "top-left",
       autoCollapse: true,
@@ -61,9 +68,7 @@ class MapController {
 
     this.#mapView?.ui.add(expand, "top-left");
 
-    if (domRefs.title.current) {
-      this.#mapView?.ui.add(domRefs.title.current, "top-right");
-    }
+    this.#mapView?.ui.add(domRefs.title.current, "top-right");
 
     if (this.#fireFeatureLayer && this.#zipcodeFeatureLayer) {
       this.#map?.layers.addMany([
@@ -80,7 +85,7 @@ class MapController {
       );
 
       await this.loadZipCodes();
-      await this.createTimeSlider(domRefs.timeSlider);
+      await this.createTimeSlider(domRefs.timeSlider.current);
       await this.updateFeaturesAndView();
 
       this.#mapView?.when(() => {
@@ -101,7 +106,7 @@ class MapController {
     return new Date(alarmdate);
   };
 
-  private createTimeSlider = async (timeSliderRef: RefObject<HTMLElement>) => {
+  private createTimeSlider = async (timeSliderElement: HTMLDivElement) => {
     const labelFormatFunction = (
       value: Date | Date[],
       type: string | undefined,
@@ -137,7 +142,7 @@ class MapController {
     };
 
     const timeSlider = new TimeSlider({
-      container: timeSliderRef.current ?? undefined,
+      container: timeSliderElement,
       view: this.#mapView,
       stops: {
         interval: new TimeInterval({
