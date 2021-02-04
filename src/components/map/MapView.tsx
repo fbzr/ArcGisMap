@@ -22,8 +22,16 @@ const MapView = () => {
     });
   };
 
+  const cleanup = () => {
+    mapViewRef.current = null;
+    expandWidgetRef.current = null;
+    titleRef.current = null;
+    timeSliderRef.current = null;
+  };
+
   useEffect(() => {
     initialize();
+    return cleanup;
   }, []);
 
   return (
