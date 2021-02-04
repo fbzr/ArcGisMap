@@ -1,7 +1,12 @@
 import { RefObject } from "react";
 // redux
 import store from "../redux/store";
-import { setMapLoaded, setSelectedZipCode } from "../redux/slices/map";
+import {
+  setMapLoaded,
+  setSelectedZipCode,
+  setStartDate,
+  setEndDate,
+} from "../redux/slices/map";
 // esri
 import Map from "@arcgis/core/Map";
 import MapView from "@arcgis/core/views/MapView";
@@ -15,6 +20,8 @@ import TimeInterval from "@arcgis/core/TimeInterval";
 import TimeExtent from "@arcgis/core/TimeExtent";
 // Config
 import mapConfig from "./mapConfig";
+//
+import { format } from "date-fns";
 
 interface InitParams {
   // object with dom references necessary for the map
@@ -124,6 +131,7 @@ class MapController {
     const y = alarmdate.getUTCFullYear();
     const m = alarmdate.getMonth();
 
+    // return first day of the month if date === "start" and last day if date === "end"
     return date === "start"
       ? new Date(y, m, 1, 0, 0, 0)
       : new Date(y, m + 1, 0, 23, 59, 59);
@@ -178,7 +186,9 @@ class MapController {
     });
 
     this.#startDate = await this.getTimeExtentDate("start");
+    store.dispatch(setStartDate(this.#startDate));
     this.#endDate = await this.getTimeExtentDate("end");
+    store.dispatch(setEndDate(this.#endDate));
 
     timeSlider.fullTimeExtent = new TimeExtent({
       start: this.#startDate,
