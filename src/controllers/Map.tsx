@@ -3,11 +3,17 @@ import { RefObject } from "react";
 import store from "../redux/store";
 import { setMapLoaded, setSelectedZipCode } from "../redux/slices/map";
 // esri
-import { setDefaultOptions, loadModules } from "esri-loader";
+import Map from "@arcgis/core/Map";
+import MapView from "@arcgis/core/views/MapView";
+import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
+import FeatureLayerView from "@arcgis/core/views/layers/FeatureLayerView";
+import Expand from "@arcgis/core/widgets/Expand";
+import TimeSlider from "@arcgis/core/widgets/TimeSlider";
+import FeatureFilter from "@arcgis/core/views/layers/support/FeatureFilter";
+import TimeInterval from "@arcgis/core/TimeInterval";
+import TimeExtent from "@arcgis/core/TimeExtent";
+// Config
 import mapConfig from "./mapConfig";
-
-setDefaultOptions({ css: true });
-
 interface InitParams {
   // object with dom references necessary for the map
   // [property: string]: RefObject<HTMLDivElement>;
@@ -16,15 +22,14 @@ interface InitParams {
   timeSlider: RefObject<HTMLDivElement>;
   title: RefObject<HTMLDivElement>;
 }
-
 class MapController {
   // ESRI
-  #map?: __esri.Map;
-  #mapView?: __esri.MapView;
-  #fireFeatureLayer?: __esri.FeatureLayer;
-  #zipcodeFeatureLayer?: __esri.FeatureLayer;
-  #fireFeatureLayerView?: __esri.FeatureLayerView;
-  #zipcodeFeatureLayerView?: __esri.FeatureLayerView;
+  #map?: Map;
+  #mapView?: MapView;
+  #fireFeatureLayer?: FeatureLayer;
+  #zipcodeFeatureLayer?: FeatureLayer;
+  #fireFeatureLayerView?: FeatureLayerView;
+  #zipcodeFeatureLayerView?: FeatureLayerView;
 
   // Other properties
   #zipCodeList: string[] = [];
@@ -34,13 +39,6 @@ class MapController {
 
   initialize = async (domRefs: InitParams) => {
     if (!domRefs.mapView.current) return;
-
-    const [Map, MapView, FeatureLayer, Expand] = await loadModules([
-      "esri/Map",
-      "esri/views/MapView",
-      "esri/layers/FeatureLayer",
-      "esri/widgets/Expand",
-    ]);
 
     this.#map = new Map({ basemap: "topo-vector" });
 
@@ -55,7 +53,7 @@ class MapController {
     // expand widget
     const expand = new Expand({
       view: this.#mapView,
-      content: domRefs.expand.current,
+      content: domRefs.expand.current as Node,
       expandIconClass: "esri-icon-filter",
       group: "top-left",
       autoCollapse: true,
@@ -103,24 +101,17 @@ class MapController {
     return new Date(alarmdate);
   };
 
-  private createTimeSlider = async (
-    timeSliderRef: RefObject<HTMLDivElement>
-  ) => {
-    const [TimeSlider, FeatureFilter] = await loadModules([
-      "esri/widgets/TimeSlider",
-      "esri/views/layers/support/FeatureFilter",
-    ]);
-
+  private createTimeSlider = async (timeSliderRef: RefObject<HTMLElement>) => {
     const labelFormatFunction = (
       value: Date | Date[],
-      type: string,
-      element: HTMLElement,
-      layout: "compact" | "wide"
+      type: string | undefined,
+      element: HTMLElement | undefined,
+      layout: "compact" | "wide" | undefined
     ) => {
       switch (type) {
         case "min":
         case "max":
-          if (value instanceof Date) {
+          if (value instanceof Date && element) {
             element.innerText = `${value.getFullYear()}`;
           }
           break;
@@ -137,20 +128,22 @@ class MapController {
                 ? `0${end.getMonth() + 1}`
                 : end.getMonth() + 1;
 
-            element.innerText = `${startMonth}/${start.getFullYear()} - ${endMonth}/${end.getFullYear()}`;
+            if (element) {
+              element.innerText = `${startMonth}/${start.getFullYear()} - ${endMonth}/${end.getFullYear()}`;
+            }
           }
           break;
       }
     };
 
     const timeSlider = new TimeSlider({
-      container: timeSliderRef.current,
+      container: timeSliderRef.current ?? undefined,
       view: this.#mapView,
       stops: {
-        interval: {
+        interval: new TimeInterval({
           value: 1,
           unit: "months",
-        },
+        }),
       },
       playRate: 120,
       labelFormatFunction,
@@ -159,10 +152,10 @@ class MapController {
     this.#startDate = await this.getTimeExtentDate("start");
     this.#endDate = await this.getTimeExtentDate("end");
 
-    timeSlider.fullTimeExtent = {
+    timeSlider.fullTimeExtent = new TimeExtent({
       start: this.#startDate,
       end: this.#endDate,
-    };
+    });
 
     // set initial time slider range to full range
     timeSlider.values = [this.#startDate, this.#endDate];
@@ -248,10 +241,6 @@ class MapController {
   };
 
   private updateViews = async () => {
-    const [FeatureFilter] = await loadModules([
-      "esri/views/layers/support/FeatureFilter",
-    ]);
-
     // Fire layer view
     if (this.#fireFeatureLayerView) {
       let fireLayerWhere: string = `alarmdate >= ${this.#startDate?.getTime()} AND alarmdate <= ${this.#endDate?.getTime()}`;
