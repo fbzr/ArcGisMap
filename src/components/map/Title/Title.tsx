@@ -4,9 +4,10 @@ import "./Title.scss";
 import { useSelector } from "react-redux";
 import {
   selectedZipCode as selectedZipCodeSelector,
-  startDate as startDateSelector,
-  endDate as endDateSelector,
+  timeExtent as timeExtentSelector,
 } from "../../../redux/slices/map";
+//
+import { format } from "date-fns";
 
 interface TitleProps {
   titleRef: RefObject<HTMLDivElement>;
@@ -14,15 +15,17 @@ interface TitleProps {
 
 const Title = ({ titleRef }: TitleProps) => {
   const selectedZipCode = useSelector(selectedZipCodeSelector);
-  const startDate = useSelector(startDateSelector);
-  const endDate = useSelector(endDateSelector);
+  const { startDate, endDate } = useSelector(timeExtentSelector);
 
   return (
     <div ref={titleRef} className="esri-widget title-container ">
       <h1 id="title-text">Las Vegas Fire Incidents</h1>
-      <h2>
-        {selectedZipCode} - {startDate?.toString()} - {endDate?.toString()}
-      </h2>
+      {startDate && endDate && (
+        <h2>
+          {selectedZipCode && `${selectedZipCode} - `}
+          {`${format(startDate, "MMM/yyyy")} - ${format(endDate, "MMM/yyyy")}`}
+        </h2>
+      )}
     </div>
   );
 };

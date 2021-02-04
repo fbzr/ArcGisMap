@@ -28,11 +28,9 @@ export const mapSlice = createSlice({
     setSelectedZipCode: (state, action: PayloadAction<string | undefined>) => {
       state.selectedZipCode = action.payload;
     },
-    setStartDate: (state, action: PayloadAction<Date | undefined>) => {
-      state.timeExtent.startDate = action.payload;
-    },
-    setEndDate: (state, action: PayloadAction<Date>) => {
-      state.timeExtent.endDate = action.payload;
+    setTimeExtent: (state, action: PayloadAction<{start: Date, end: Date}>) => {
+      state.timeExtent.startDate = action.payload.start;
+      state.timeExtent.endDate = action.payload.end;
     }
   },
 });
@@ -40,13 +38,11 @@ export const mapSlice = createSlice({
 export const {
   setMapLoaded,
   setSelectedZipCode,
-  setStartDate,
-  setEndDate
+  setTimeExtent
 } = mapSlice.actions;
 
 export const mapLoaded = (state: RootState) => state.map.mapLoaded;
 export const selectedZipCode = (state: RootState) => state.map.selectedZipCode;
-export const startDate = (state: RootState) => state.map.timeExtent.startDate;
-export const endDate = (state: RootState) => state.map.timeExtent.endDate;
+export const timeExtent = (state: RootState) => state.map.timeExtent;
 
 export default mapSlice.reducer;

@@ -4,8 +4,7 @@ import store from "../redux/store";
 import {
   setMapLoaded,
   setSelectedZipCode,
-  setStartDate,
-  setEndDate,
+  setTimeExtent,
 } from "../redux/slices/map";
 // esri
 import Map from "@arcgis/core/Map";
@@ -154,18 +153,13 @@ class MapController {
         case "extent":
           if (value instanceof Array) {
             const start = value[0];
-            let startMonth =
-              start.getMonth() + 1 < 10
-                ? `0${start.getMonth() + 1}`
-                : start.getMonth() + 1;
             const end = value[1];
-            let endMonth =
-              end.getMonth() + 1 < 10
-                ? `0${end.getMonth() + 1}`
-                : end.getMonth() + 1;
 
             if (element) {
-              element.innerText = `${startMonth}/${start.getFullYear()} - ${endMonth}/${end.getFullYear()}`;
+              element.innerHTML = `${format(start, "MMM/yyyy")} - ${format(
+                end,
+                "MMM/yyyy"
+              )}`;
             }
           }
           break;
@@ -186,9 +180,13 @@ class MapController {
     });
 
     this.#startDate = await this.getTimeExtentDate("start");
-    store.dispatch(setStartDate(this.#startDate));
     this.#endDate = await this.getTimeExtentDate("end");
-    store.dispatch(setEndDate(this.#endDate));
+    store.dispatch(
+      setTimeExtent({
+        start: this.#startDate,
+        end: this.#endDate,
+      })
+    );
 
     timeSlider.fullTimeExtent = new TimeExtent({
       start: this.#startDate,
@@ -202,6 +200,9 @@ class MapController {
       // update start and end dates
       this.#startDate = timeSlider.timeExtent.start;
       this.#endDate = timeSlider.timeExtent.end;
+      store.dispatch(
+        setTimeExtent({ start: this.#startDate, end: this.#endDate })
+      );
 
       if (this.#fireFeatureLayerView) {
         let where = `alarmdate >= ${timeSlider.timeExtent.start.getTime()} AND alarmdate <= ${timeSlider.timeExtent.end.getTime()}`;
