@@ -3,6 +3,8 @@ import ReactDOM from "react-dom";
 import App from "./App";
 import reportWebVitals from "./reportWebVitals";
 import "./index.css";
+// arcGIS CSS
+import "@arcgis/core/assets/esri/themes/dark/main.css";
 // Redux
 import store from "./redux/store";
 import { Provider } from "react-redux";
