@@ -14,6 +14,7 @@ import TimeInterval from "@arcgis/core/TimeInterval";
 import TimeExtent from "@arcgis/core/TimeExtent";
 // Config
 import mapConfig from "./mapConfig";
+
 interface InitParams {
   // object with dom references necessary for the map
   // [property: string]: RefObject<HTMLDivElement>;
@@ -22,6 +23,7 @@ interface InitParams {
   timeSlider: RefObject<HTMLDivElement>;
   title: RefObject<HTMLDivElement>;
 }
+
 class MapController {
   // ESRI
   #map?: Map;
