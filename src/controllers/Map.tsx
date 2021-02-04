@@ -76,7 +76,6 @@ class MapController {
     const basemapGalleryExpand = new Expand({
       view: this.#mapView,
       content: basemapGallery,
-      // container: domRefs.basemapGalleryExpandWidget.current,
       expandIconClass: "esri-icon-basemap",
       autoCollapse: true,
     });
@@ -202,7 +201,14 @@ class MapController {
       }
     });
 
-    this.#mapView?.ui.add(timeSlider, "bottom-left");
+    const timeSliderExpand = new Expand({
+      view: this.#mapView,
+      content: timeSliderElement,
+      expandIconClass: "esri-icon-time-clock",
+      autoCollapse: true,
+    });
+
+    this.#mapView?.ui.add(timeSliderExpand, "bottom-left");
   };
 
   private loadZipCodes = async () => {
