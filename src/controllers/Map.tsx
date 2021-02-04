@@ -121,10 +121,6 @@ class MapController {
     const alarmdateRes: string = res?.features[0].attributes["alarmdate"];
     const alarmdate = new Date(alarmdateRes);
 
-    if (date === "start") {
-      return new Date(alarmdate.getUTCFullYear(), alarmdate.getMonth());
-    }
-
     const y = alarmdate.getUTCFullYear();
     const m = alarmdate.getMonth();
 
