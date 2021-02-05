@@ -115,7 +115,7 @@ class MapController {
       await this.loadZipCodes();
       await this.createTimeSlider(domRefs.timeSlider.current);
       await this.updateFeaturesAndView();
-      this.addSketchWidget();
+      this.createSketchWidget();
 
       this.#mapView?.when(() => {
         store.dispatch(setMapLoaded(true));
@@ -123,7 +123,7 @@ class MapController {
     }
   };
 
-  private addSketchWidget = () => {
+  private createSketchWidget = () => {
     const sketch = new Sketch({
       layer: this.#graphicsLayer,
       view: this.#mapView,
@@ -157,7 +157,13 @@ class MapController {
       }
     });
 
-    this.#mapView?.ui.add(sketch, "bottom-right");
+    const sketchExpand = new Expand({
+      view: this.#mapView,
+      content: sketch,
+      expandIconClass: "esri-icon-edit",
+    });
+
+    this.#mapView?.ui.add(sketchExpand, "bottom-right");
   };
 
   private uniteGraphicLayerGeometries = () => {
