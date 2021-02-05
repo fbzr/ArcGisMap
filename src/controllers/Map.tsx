@@ -50,6 +50,7 @@ class MapController {
   #startDate?: Date;
   #endDate?: Date;
   #selectedZipCode?: string;
+  #currentGeometry?: Geometry;
 
   initialize = async (domRefs: InitParams) => {
     if (
@@ -292,7 +293,7 @@ class MapController {
     }
   };
 
-  private centerMap = async (features: __esri.Graphic[]) => {
+  private centerMap = (features: __esri.Graphic[]) => {
     const geometries: Geometry[] = features.map((feature) => feature.geometry);
 
     this.#mapView?.goTo(geometries);
@@ -327,6 +328,10 @@ class MapController {
           ? zipcodeFeaturesResponse.features
           : fireFeaturesResponse.features;
         this.centerMap(features);
+
+        if (this.#selectedZipCode) {
+          this.#currentGeometry = features[0].geometry;
+        }
       }
     }
   };
@@ -334,10 +339,14 @@ class MapController {
   private updateViews = async () => {
     let graphicLayerGeometry = this.uniteGraphicLayerGeometries();
 
-    // remove selected zipcpde if sketch widget is being used
-    if (graphicLayerGeometry && this.#selectedZipCode) {
-      this.#selectedZipCode = undefined;
-      store.dispatch(setSelectedZipCode(this.#selectedZipCode));
+    if (graphicLayerGeometry) {
+      this.#currentGeometry = graphicLayerGeometry;
+
+      // remove selected zipcpde if sketch widget is being used
+      if (this.#selectedZipCode) {
+        this.#selectedZipCode = undefined;
+        store.dispatch(setSelectedZipCode(this.#selectedZipCode));
+      }
     }
 
     // Fire layer view
@@ -350,9 +359,11 @@ class MapController {
         }' OR postalcode = ${this.#selectedZipCode})`;
       }
 
+      console.log("selected geo", this.#currentGeometry);
+
       this.#fireFeatureLayerView.filter = new FeatureFilter({
         where: fireLayerWhere,
-        geometry: graphicLayerGeometry,
+        geometry: this.#currentGeometry,
       });
     }
 
@@ -378,8 +389,8 @@ class MapController {
 
       store.dispatch(setSelectedZipCode(this.#selectedZipCode));
 
-      this.updateFeatures();
-      this.updateViews();
+      await this.updateFeatures();
+      await this.updateViews();
     }
   };
 
