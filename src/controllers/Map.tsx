@@ -19,6 +19,7 @@ import TimeInterval from "@arcgis/core/TimeInterval";
 import TimeExtent from "@arcgis/core/TimeExtent";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import Sketch from "@arcgis/core/widgets/Sketch";
+import Geometry from "@arcgis/core/geometry/Geometry";
 // Config
 import mapConfig from "./mapConfig";
 //
@@ -139,10 +140,11 @@ class MapController {
       creationMode: "update",
     });
 
-    sketch.on("create", (event) => {
+    sketch.on("create", async (event) => {
       if (event.state === "complete") {
         // this.#graphicsLayer?.remove(event.graphic);
         // event.graphic
+        await this.updateViews(event.graphic.geometry);
         this.#mapView?.goTo(event.graphic);
       }
     });
@@ -279,9 +281,7 @@ class MapController {
   };
 
   private centerMap = async (features: __esri.Graphic[]) => {
-    const geometries: __esri.Geometry[] = features.map(
-      (feature) => feature.geometry
-    );
+    const geometries: Geometry[] = features.map((feature) => feature.geometry);
 
     this.#mapView?.goTo(geometries);
   };
@@ -319,7 +319,7 @@ class MapController {
     }
   };
 
-  private updateViews = async () => {
+  private updateViews = async (geometry: Geometry | undefined = undefined) => {
     // Fire layer view
     if (this.#fireFeatureLayerView) {
       let fireLayerWhere: string = `alarmdate >= ${this.#startDate?.getTime()} AND alarmdate <= ${this.#endDate?.getTime()}`;
@@ -332,6 +332,7 @@ class MapController {
 
       this.#fireFeatureLayerView.filter = new FeatureFilter({
         where: fireLayerWhere,
+        geometry: geometry,
       });
     }
 
