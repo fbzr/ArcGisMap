@@ -143,22 +143,27 @@ class MapController {
 
     sketch.on("create", async (event) => {
       if (event.state === "complete") {
-        // this.#graphicsLayer?.remove(event.graphic);
-        // event.graphic
-        let geometries = this.#graphicsLayer?.graphics.map(
-          (graphic) => graphic.geometry
-        );
+        const joinedGeometries = this.uniteGraphicLayerGeometries();
 
-        if (geometries) {
-          const allGeometries = geometryEngine.union(geometries?.toArray());
-
-          await this.updateViews(allGeometries);
-          this.#mapView?.goTo(allGeometries);
-        }
+        await this.updateViews(joinedGeometries);
+        this.#mapView?.goTo(joinedGeometries);
       }
     });
 
+    sketch.on("delete", async (event) => {
+      const joinedGeometries = this.uniteGraphicLayerGeometries();
+      await this.updateViews(joinedGeometries);
+    });
+
     this.#mapView?.ui.add(sketch, "bottom-right");
+  };
+
+  private uniteGraphicLayerGeometries = () => {
+    let geometries = this.#graphicsLayer?.graphics.map(
+      (graphic) => graphic.geometry
+    );
+
+    return geometries ? geometryEngine.union(geometries.toArray()) : undefined;
   };
 
   private getTimeExtentDate = async (date: "start" | "end") => {
