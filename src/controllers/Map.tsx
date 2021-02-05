@@ -20,6 +20,7 @@ import TimeExtent from "@arcgis/core/TimeExtent";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import Sketch from "@arcgis/core/widgets/Sketch";
 import Geometry from "@arcgis/core/geometry/Geometry";
+import * as geometryEngine from "@arcgis/core/geometry/geometryEngine";
 // Config
 import mapConfig from "./mapConfig";
 //
@@ -144,8 +145,16 @@ class MapController {
       if (event.state === "complete") {
         // this.#graphicsLayer?.remove(event.graphic);
         // event.graphic
-        await this.updateViews(event.graphic.geometry);
-        this.#mapView?.goTo(event.graphic);
+        let geometries = this.#graphicsLayer?.graphics.map(
+          (graphic) => graphic.geometry
+        );
+
+        if (geometries) {
+          const allGeometries = geometryEngine.union(geometries?.toArray());
+
+          await this.updateViews(allGeometries);
+          this.#mapView?.goTo(allGeometries);
+        }
       }
     });
 
