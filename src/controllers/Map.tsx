@@ -143,21 +143,17 @@ class MapController {
 
     sketch.on("create", async (event) => {
       if (event.state === "complete") {
-        const joinedGeometries = this.uniteGraphicLayerGeometries();
-        this.updateViews(joinedGeometries);
-        this.#mapView?.goTo(joinedGeometries);
+        this.updateViews();
       }
     });
 
     sketch.on("delete", async (event) => {
-      const joinedGeometries = this.uniteGraphicLayerGeometries();
-      this.updateViews(joinedGeometries);
+      this.updateViews();
     });
 
     sketch.on("update", (event) => {
       if (event.state === "active" || event.state === "complete") {
-        const joinedGeometries = this.uniteGraphicLayerGeometries();
-        this.updateViews(joinedGeometries);
+        this.updateViews();
       }
     });
 
@@ -169,7 +165,9 @@ class MapController {
       (graphic) => graphic.geometry
     );
 
-    return geometries ? geometryEngine.union(geometries.toArray()) : undefined;
+    return geometries?.length
+      ? geometryEngine.union(geometries.toArray())
+      : undefined;
   };
 
   private getTimeExtentDate = async (date: "start" | "end") => {
@@ -339,10 +337,11 @@ class MapController {
     }
   };
 
-  private updateViews = async (geometry: Geometry | undefined = undefined) => {
+  private updateViews = async () => {
     // Fire layer view
     if (this.#fireFeatureLayerView) {
       let fireLayerWhere: string = `alarmdate >= ${this.#startDate?.getTime()} AND alarmdate <= ${this.#endDate?.getTime()}`;
+      let graphicLayerGeometry = this.uniteGraphicLayerGeometries();
 
       if (this.#selectedZipCode) {
         fireLayerWhere += ` AND (ZIP = '${
@@ -352,7 +351,7 @@ class MapController {
 
       this.#fireFeatureLayerView.filter = new FeatureFilter({
         where: fireLayerWhere,
-        geometry: geometry,
+        geometry: graphicLayerGeometry,
       });
     }
 
@@ -369,6 +368,11 @@ class MapController {
   updateFeaturesAndView = async (zipCode: string | null = null) => {
     if (this.#fireFeatureLayerView && this.#zipcodeFeatureLayerView) {
       this.#selectedZipCode = zipCode ?? undefined;
+
+      if (this.#selectedZipCode) {
+        this.#graphicsLayer?.removeAll();
+      }
+
       store.dispatch(setSelectedZipCode(this.#selectedZipCode));
 
       await this.updateFeatures();
