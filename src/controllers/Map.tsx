@@ -17,6 +17,10 @@ import TimeSlider from "@arcgis/core/widgets/TimeSlider";
 import FeatureFilter from "@arcgis/core/views/layers/support/FeatureFilter";
 import TimeInterval from "@arcgis/core/TimeInterval";
 import TimeExtent from "@arcgis/core/TimeExtent";
+import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
+import Sketch from "@arcgis/core/widgets/Sketch";
+import Geometry from "@arcgis/core/geometry/Geometry";
+import * as geometryEngine from "@arcgis/core/geometry/geometryEngine";
 // Config
 import mapConfig from "./mapConfig";
 //
@@ -39,6 +43,7 @@ class MapController {
   #zipcodeFeatureLayer?: FeatureLayer;
   #fireFeatureLayerView?: FeatureLayerView;
   #zipcodeFeatureLayerView?: FeatureLayerView;
+  #graphicsLayer?: GraphicsLayer;
 
   // Other properties
   #zipCodeList: string[] = [];
@@ -56,15 +61,23 @@ class MapController {
       return;
     }
 
-    this.#map = new Map({ basemap: "topo-vector" });
+    this.#fireFeatureLayer = new FeatureLayer(mapConfig.lvFireFeatureLayer);
+    this.#zipcodeFeatureLayer = new FeatureLayer(mapConfig.zipcodeLayer);
+    this.#graphicsLayer = new GraphicsLayer();
+
+    this.#map = new Map({
+      basemap: "topo-vector",
+      layers: [
+        this.#graphicsLayer,
+        this.#fireFeatureLayer,
+        this.#zipcodeFeatureLayer,
+      ],
+    });
 
     this.#mapView = new MapView({
       container: domRefs.mapView.current,
       map: this.#map,
     });
-
-    this.#fireFeatureLayer = new FeatureLayer(mapConfig.lvFireFeatureLayer);
-    this.#zipcodeFeatureLayer = new FeatureLayer(mapConfig.zipcodeLayer);
 
     // zipcode expand widget
     const zipcodeExpand = new Expand({
@@ -87,17 +100,10 @@ class MapController {
     });
 
     this.#mapView.ui.add(basemapGalleryExpand, "top-left");
-
     this.#mapView?.ui.add(zipcodeExpand, "top-left");
-
     this.#mapView?.ui.add(domRefs.title.current, "top-right");
 
     if (this.#fireFeatureLayer && this.#zipcodeFeatureLayer) {
-      this.#map?.layers.addMany([
-        this.#zipcodeFeatureLayer,
-        this.#fireFeatureLayer,
-      ]);
-
       this.#fireFeatureLayerView = await this.#mapView?.whenLayerView(
         this.#fireFeatureLayer
       );
@@ -109,11 +115,65 @@ class MapController {
       await this.loadZipCodes();
       await this.createTimeSlider(domRefs.timeSlider.current);
       await this.updateFeaturesAndView();
+      this.createSketchWidget();
 
       this.#mapView?.when(() => {
         store.dispatch(setMapLoaded(true));
       });
     }
+  };
+
+  private createSketchWidget = () => {
+    const sketch = new Sketch({
+      layer: this.#graphicsLayer,
+      view: this.#mapView,
+      availableCreateTools: ["polygon", "rectangle", "circle"],
+      defaultCreateOptions: {
+        mode: "freehand",
+      },
+      visibleElements: {
+        selectionTools: {
+          "rectangle-selection": false,
+          "lasso-selection": false,
+        },
+      },
+      // graphic will be selected as soon as it is created
+      creationMode: "update",
+    });
+
+    sketch.on("create", (event) => {
+      if (event.state === "complete") {
+        this.updateViews();
+      }
+    });
+
+    sketch.on("delete", () => {
+      this.updateViews();
+    });
+
+    sketch.on("update", (event) => {
+      if (event.state === "active" || event.state === "complete") {
+        this.updateViews();
+      }
+    });
+
+    const sketchExpand = new Expand({
+      view: this.#mapView,
+      content: sketch,
+      expandIconClass: "esri-icon-edit",
+    });
+
+    this.#mapView?.ui.add(sketchExpand, "bottom-right");
+  };
+
+  private uniteGraphicLayerGeometries = () => {
+    let geometries = this.#graphicsLayer?.graphics.map(
+      (graphic) => graphic.geometry
+    );
+
+    return geometries?.length
+      ? geometryEngine.union(geometries.toArray())
+      : undefined;
   };
 
   private getTimeExtentDate = async (date: "start" | "end") => {
@@ -204,19 +264,7 @@ class MapController {
         setTimeExtent({ start: this.#startDate, end: this.#endDate })
       );
 
-      if (this.#fireFeatureLayerView) {
-        let where = `alarmdate >= ${timeSlider.timeExtent.start.getTime()} AND alarmdate <= ${timeSlider.timeExtent.end.getTime()}`;
-
-        if (this.#selectedZipCode) {
-          where += ` AND (ZIP = '${this.#selectedZipCode}' OR postalcode = ${
-            this.#selectedZipCode
-          })`;
-        }
-
-        this.#fireFeatureLayerView.filter = new FeatureFilter({
-          where,
-        });
-      }
+      this.updateViews();
     });
 
     const timeSliderExpand = new Expand({
@@ -245,9 +293,7 @@ class MapController {
   };
 
   private centerMap = async (features: __esri.Graphic[]) => {
-    const geometries: __esri.Geometry[] = features.map(
-      (feature) => feature.geometry
-    );
+    const geometries: Geometry[] = features.map((feature) => feature.geometry);
 
     this.#mapView?.goTo(geometries);
   };
@@ -286,11 +332,19 @@ class MapController {
   };
 
   private updateViews = async () => {
+    let graphicLayerGeometry = this.uniteGraphicLayerGeometries();
+
+    // remove selected zipcpde if sketch widget is being used
+    if (graphicLayerGeometry && this.#selectedZipCode) {
+      this.#selectedZipCode = undefined;
+      store.dispatch(setSelectedZipCode(this.#selectedZipCode));
+    }
+
     // Fire layer view
     if (this.#fireFeatureLayerView) {
       let fireLayerWhere: string = `alarmdate >= ${this.#startDate?.getTime()} AND alarmdate <= ${this.#endDate?.getTime()}`;
 
-      if (this.#selectedZipCode) {
+      if (this.#selectedZipCode && !graphicLayerGeometry) {
         fireLayerWhere += ` AND (ZIP = '${
           this.#selectedZipCode
         }' OR postalcode = ${this.#selectedZipCode})`;
@@ -298,26 +352,34 @@ class MapController {
 
       this.#fireFeatureLayerView.filter = new FeatureFilter({
         where: fireLayerWhere,
+        geometry: graphicLayerGeometry,
       });
     }
 
     // Zipcode layer view
     if (this.#zipcodeFeatureLayerView) {
-      this.#zipcodeFeatureLayerView.filter = new FeatureFilter({
-        where: `ZIP = '${this.#selectedZipCode}'`,
-      });
-
       this.#zipcodeFeatureLayerView.visible = !!this.#selectedZipCode;
+
+      if (this.#selectedZipCode) {
+        this.#zipcodeFeatureLayerView.filter = new FeatureFilter({
+          where: `ZIP = '${this.#selectedZipCode}'`,
+        });
+      }
     }
   };
 
   updateFeaturesAndView = async (zipCode: string | null = null) => {
     if (this.#fireFeatureLayerView && this.#zipcodeFeatureLayerView) {
       this.#selectedZipCode = zipCode ?? undefined;
+
+      if (this.#selectedZipCode) {
+        this.#graphicsLayer?.removeAll();
+      }
+
       store.dispatch(setSelectedZipCode(this.#selectedZipCode));
 
-      await this.updateFeatures();
-      await this.updateViews();
+      this.updateFeatures();
+      this.updateViews();
     }
   };
 
