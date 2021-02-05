@@ -144,17 +144,17 @@ class MapController {
 
     sketch.on("create", (event) => {
       if (event.state === "complete") {
-        this.updateViews();
+        this.updateViewsAfterSketchEvent();
       }
     });
 
     sketch.on("delete", () => {
-      this.updateViews();
+      this.updateViewsAfterSketchEvent();
     });
 
     sketch.on("update", (event) => {
       if (event.state === "active" || event.state === "complete") {
-        this.updateViews();
+        this.updateViewsAfterSketchEvent();
       }
     });
 
@@ -165,6 +165,16 @@ class MapController {
     });
 
     this.#mapView?.ui.add(sketchExpand, "bottom-right");
+  };
+
+  private updateViewsAfterSketchEvent = () => {
+    if (this.#selectedZipCode) {
+      this.#selectedZipCode = undefined;
+      store.dispatch(setSelectedZipCode(this.#selectedZipCode));
+    }
+
+    this.#currentGeometry = this.uniteGraphicLayerGeometries();
+    this.updateViews();
   };
 
   private uniteGraphicLayerGeometries = () => {
@@ -329,37 +339,18 @@ class MapController {
           : fireFeaturesResponse.features;
         this.centerMap(features);
 
-        if (this.#selectedZipCode) {
-          this.#currentGeometry = features[0].geometry;
-        }
+        // update current geometry
+        this.#currentGeometry = this.#selectedZipCode
+          ? features[0].geometry
+          : undefined;
       }
     }
   };
 
   private updateViews = async () => {
-    let graphicLayerGeometry = this.uniteGraphicLayerGeometries();
-
-    if (graphicLayerGeometry) {
-      this.#currentGeometry = graphicLayerGeometry;
-
-      // remove selected zipcpde if sketch widget is being used
-      if (this.#selectedZipCode) {
-        this.#selectedZipCode = undefined;
-        store.dispatch(setSelectedZipCode(this.#selectedZipCode));
-      }
-    }
-
     // Fire layer view
     if (this.#fireFeatureLayerView) {
       let fireLayerWhere: string = `alarmdate >= ${this.#startDate?.getTime()} AND alarmdate <= ${this.#endDate?.getTime()}`;
-
-      if (this.#selectedZipCode && !graphicLayerGeometry) {
-        fireLayerWhere += ` AND (ZIP = '${
-          this.#selectedZipCode
-        }' OR postalcode = ${this.#selectedZipCode})`;
-      }
-
-      console.log("selected geo", this.#currentGeometry);
 
       this.#fireFeatureLayerView.filter = new FeatureFilter({
         where: fireLayerWhere,
@@ -383,9 +374,7 @@ class MapController {
     if (this.#fireFeatureLayerView && this.#zipcodeFeatureLayerView) {
       this.#selectedZipCode = zipCode ?? undefined;
 
-      if (this.#selectedZipCode) {
-        this.#graphicsLayer?.removeAll();
-      }
+      this.#graphicsLayer?.removeAll();
 
       store.dispatch(setSelectedZipCode(this.#selectedZipCode));
 
