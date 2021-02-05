@@ -144,15 +144,21 @@ class MapController {
     sketch.on("create", async (event) => {
       if (event.state === "complete") {
         const joinedGeometries = this.uniteGraphicLayerGeometries();
-
-        await this.updateViews(joinedGeometries);
+        this.updateViews(joinedGeometries);
         this.#mapView?.goTo(joinedGeometries);
       }
     });
 
     sketch.on("delete", async (event) => {
       const joinedGeometries = this.uniteGraphicLayerGeometries();
-      await this.updateViews(joinedGeometries);
+      this.updateViews(joinedGeometries);
+    });
+
+    sketch.on("update", (event) => {
+      if (event.state === "active" || event.state === "complete") {
+        const joinedGeometries = this.uniteGraphicLayerGeometries();
+        this.updateViews(joinedGeometries);
+      }
     });
 
     this.#mapView?.ui.add(sketch, "bottom-right");
