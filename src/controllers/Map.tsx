@@ -59,16 +59,23 @@ class MapController {
       return;
     }
 
-    this.#map = new Map({ basemap: "topo-vector" });
+    this.#fireFeatureLayer = new FeatureLayer(mapConfig.lvFireFeatureLayer);
+    this.#zipcodeFeatureLayer = new FeatureLayer(mapConfig.zipcodeLayer);
+    this.#graphicsLayer = new GraphicsLayer();
+
+    this.#map = new Map({
+      basemap: "topo-vector",
+      layers: [
+        this.#fireFeatureLayer,
+        this.#zipcodeFeatureLayer,
+        this.#graphicsLayer,
+      ],
+    });
 
     this.#mapView = new MapView({
       container: domRefs.mapView.current,
       map: this.#map,
     });
-
-    this.#fireFeatureLayer = new FeatureLayer(mapConfig.lvFireFeatureLayer);
-    this.#zipcodeFeatureLayer = new FeatureLayer(mapConfig.zipcodeLayer);
-    this.#graphicsLayer = new GraphicsLayer();
 
     // zipcode expand widget
     const zipcodeExpand = new Expand({
@@ -95,12 +102,6 @@ class MapController {
     this.#mapView?.ui.add(domRefs.title.current, "top-right");
 
     if (this.#fireFeatureLayer && this.#zipcodeFeatureLayer) {
-      this.#map?.layers.addMany([
-        this.#zipcodeFeatureLayer,
-        this.#fireFeatureLayer,
-        this.#graphicsLayer,
-      ]);
-
       this.#fireFeatureLayerView = await this.#mapView?.whenLayerView(
         this.#fireFeatureLayer
       );
@@ -124,9 +125,26 @@ class MapController {
     const sketch = new Sketch({
       layer: this.#graphicsLayer,
       view: this.#mapView,
-      availableCreateTools: ["polygon"],
+      availableCreateTools: ["polygon", "rectangle", "circle"],
+      defaultCreateOptions: {
+        mode: "freehand",
+      },
+      visibleElements: {
+        selectionTools: {
+          "rectangle-selection": false,
+          "lasso-selection": false,
+        },
+      },
       // graphic will be selected as soon as it is created
-      // creationMode: "update",
+      creationMode: "update",
+    });
+
+    sketch.on("create", (event) => {
+      if (event.state === "complete") {
+        // this.#graphicsLayer?.remove(event.graphic);
+        // event.graphic
+        this.#mapView?.goTo(event.graphic);
+      }
     });
 
     this.#mapView?.ui.add(sketch, "bottom-right");
