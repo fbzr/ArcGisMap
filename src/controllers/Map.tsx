@@ -258,19 +258,7 @@ class MapController {
         setTimeExtent({ start: this.#startDate, end: this.#endDate })
       );
 
-      if (this.#fireFeatureLayerView) {
-        let where = `alarmdate >= ${timeSlider.timeExtent.start.getTime()} AND alarmdate <= ${timeSlider.timeExtent.end.getTime()}`;
-
-        if (this.#selectedZipCode) {
-          where += ` AND (ZIP = '${this.#selectedZipCode}' OR postalcode = ${
-            this.#selectedZipCode
-          })`;
-        }
-
-        this.#fireFeatureLayerView.filter = new FeatureFilter({
-          where,
-        });
-      }
+      this.updateViews();
     });
 
     const timeSliderExpand = new Expand({
@@ -338,12 +326,19 @@ class MapController {
   };
 
   private updateViews = async () => {
+    let graphicLayerGeometry = this.uniteGraphicLayerGeometries();
+
+    // remove selected zipcpde if sketch widget is being used
+    if (graphicLayerGeometry && this.#selectedZipCode) {
+      this.#selectedZipCode = undefined;
+      store.dispatch(setSelectedZipCode(this.#selectedZipCode));
+    }
+
     // Fire layer view
     if (this.#fireFeatureLayerView) {
       let fireLayerWhere: string = `alarmdate >= ${this.#startDate?.getTime()} AND alarmdate <= ${this.#endDate?.getTime()}`;
-      let graphicLayerGeometry = this.uniteGraphicLayerGeometries();
 
-      if (this.#selectedZipCode) {
+      if (this.#selectedZipCode && !graphicLayerGeometry) {
         fireLayerWhere += ` AND (ZIP = '${
           this.#selectedZipCode
         }' OR postalcode = ${this.#selectedZipCode})`;
@@ -357,11 +352,13 @@ class MapController {
 
     // Zipcode layer view
     if (this.#zipcodeFeatureLayerView) {
-      this.#zipcodeFeatureLayerView.filter = new FeatureFilter({
-        where: `ZIP = '${this.#selectedZipCode}'`,
-      });
-
       this.#zipcodeFeatureLayerView.visible = !!this.#selectedZipCode;
+
+      if (this.#selectedZipCode) {
+        this.#zipcodeFeatureLayerView.filter = new FeatureFilter({
+          where: `ZIP = '${this.#selectedZipCode}'`,
+        });
+      }
     }
   };
 
@@ -375,8 +372,8 @@ class MapController {
 
       store.dispatch(setSelectedZipCode(this.#selectedZipCode));
 
-      await this.updateFeatures();
-      await this.updateViews();
+      this.updateFeatures();
+      this.updateViews();
     }
   };
 
