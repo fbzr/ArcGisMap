@@ -68,9 +68,9 @@ class MapController {
     this.#map = new Map({
       basemap: "topo-vector",
       layers: [
+        this.#graphicsLayer,
         this.#fireFeatureLayer,
         this.#zipcodeFeatureLayer,
-        this.#graphicsLayer,
       ],
     });
 
@@ -141,13 +141,13 @@ class MapController {
       creationMode: "update",
     });
 
-    sketch.on("create", async (event) => {
+    sketch.on("create", (event) => {
       if (event.state === "complete") {
         this.updateViews();
       }
     });
 
-    sketch.on("delete", async (event) => {
+    sketch.on("delete", () => {
       this.updateViews();
     });
 
