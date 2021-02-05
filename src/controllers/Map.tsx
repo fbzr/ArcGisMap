@@ -17,6 +17,8 @@ import TimeSlider from "@arcgis/core/widgets/TimeSlider";
 import FeatureFilter from "@arcgis/core/views/layers/support/FeatureFilter";
 import TimeInterval from "@arcgis/core/TimeInterval";
 import TimeExtent from "@arcgis/core/TimeExtent";
+import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
+import Sketch from "@arcgis/core/widgets/Sketch";
 // Config
 import mapConfig from "./mapConfig";
 //
@@ -39,6 +41,7 @@ class MapController {
   #zipcodeFeatureLayer?: FeatureLayer;
   #fireFeatureLayerView?: FeatureLayerView;
   #zipcodeFeatureLayerView?: FeatureLayerView;
+  #graphicsLayer?: GraphicsLayer;
 
   // Other properties
   #zipCodeList: string[] = [];
@@ -65,6 +68,7 @@ class MapController {
 
     this.#fireFeatureLayer = new FeatureLayer(mapConfig.lvFireFeatureLayer);
     this.#zipcodeFeatureLayer = new FeatureLayer(mapConfig.zipcodeLayer);
+    this.#graphicsLayer = new GraphicsLayer();
 
     // zipcode expand widget
     const zipcodeExpand = new Expand({
@@ -87,15 +91,14 @@ class MapController {
     });
 
     this.#mapView.ui.add(basemapGalleryExpand, "top-left");
-
     this.#mapView?.ui.add(zipcodeExpand, "top-left");
-
     this.#mapView?.ui.add(domRefs.title.current, "top-right");
 
     if (this.#fireFeatureLayer && this.#zipcodeFeatureLayer) {
       this.#map?.layers.addMany([
         this.#zipcodeFeatureLayer,
         this.#fireFeatureLayer,
+        this.#graphicsLayer,
       ]);
 
       this.#fireFeatureLayerView = await this.#mapView?.whenLayerView(
@@ -109,11 +112,24 @@ class MapController {
       await this.loadZipCodes();
       await this.createTimeSlider(domRefs.timeSlider.current);
       await this.updateFeaturesAndView();
+      this.addSketchWidget();
 
       this.#mapView?.when(() => {
         store.dispatch(setMapLoaded(true));
       });
     }
+  };
+
+  private addSketchWidget = () => {
+    const sketch = new Sketch({
+      layer: this.#graphicsLayer,
+      view: this.#mapView,
+      availableCreateTools: ["polygon"],
+      // graphic will be selected as soon as it is created
+      // creationMode: "update",
+    });
+
+    this.#mapView?.ui.add(sketch, "bottom-right");
   };
 
   private getTimeExtentDate = async (date: "start" | "end") => {
