@@ -18,7 +18,7 @@ const ExpandWidget = (props: ExpandWidgetProps) => {
     event: React.MouseEvent<HTMLDivElement> | null
   ) => {
     await mapController.updateFeaturesAndView(
-      event ? event.currentTarget.innerText : null
+      event ? event.currentTarget.innerText : undefined
     );
   };
 

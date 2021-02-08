@@ -142,19 +142,27 @@ class MapController {
       creationMode: "update",
     });
 
-    sketch.on("create", (event) => {
+    sketch.on("create", async (event) => {
       if (event.state === "complete") {
-        this.updateViewsAfterSketchEvent();
+        if (this.#selectedZipCode) {
+          this.#selectedZipCode = undefined;
+          store.dispatch(setSelectedZipCode(this.#selectedZipCode));
+        }
+
+        this.#currentGeometry = this.uniteGraphicLayerGeometries();
+        await this.updateViews();
       }
     });
 
-    sketch.on("delete", () => {
-      this.updateViewsAfterSketchEvent();
+    sketch.on("delete", async () => {
+      this.#currentGeometry = this.uniteGraphicLayerGeometries();
+      await this.updateViews();
     });
 
-    sketch.on("update", (event) => {
+    sketch.on("update", async (event) => {
       if (event.state === "active" || event.state === "complete") {
-        this.updateViewsAfterSketchEvent();
+        this.#currentGeometry = this.uniteGraphicLayerGeometries();
+        await this.updateViews();
       }
     });
 
@@ -165,16 +173,6 @@ class MapController {
     });
 
     this.#mapView?.ui.add(sketchExpand, "bottom-right");
-  };
-
-  private updateViewsAfterSketchEvent = () => {
-    if (this.#selectedZipCode) {
-      this.#selectedZipCode = undefined;
-      store.dispatch(setSelectedZipCode(this.#selectedZipCode));
-    }
-
-    this.#currentGeometry = this.uniteGraphicLayerGeometries();
-    this.updateViews();
   };
 
   private uniteGraphicLayerGeometries = () => {
@@ -370,13 +368,12 @@ class MapController {
     }
   };
 
-  updateFeaturesAndView = async (zipCode: string | null = null) => {
+  updateFeaturesAndView = async (zipCode: string | undefined = undefined) => {
     if (this.#fireFeatureLayerView && this.#zipcodeFeatureLayerView) {
-      this.#selectedZipCode = zipCode ?? undefined;
-
       this.#graphicsLayer?.removeAll();
 
-      store.dispatch(setSelectedZipCode(this.#selectedZipCode));
+      this.#selectedZipCode = zipCode;
+      store.dispatch(setSelectedZipCode(zipCode));
 
       await this.updateFeatures();
       await this.updateViews();
